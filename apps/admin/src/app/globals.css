@@ -1,0 +1,59 @@
+:root {
+  --color-admin-bg: #0b132b;
+  --color-card: #1c2541;
+  --color-accent: #3a506b;
+  --color-gold: #d4af37;
+  --color-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-admin-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-title {
+  font-size: 1.8rem;
+  color: var(--color-gold);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.card .value {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
