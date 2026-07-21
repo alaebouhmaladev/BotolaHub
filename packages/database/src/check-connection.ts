@@ -1,4 +1,7 @@
+import dotenv from 'dotenv';
 import { checkDatabaseConnection, prisma } from './index.js';
+
+dotenv.config();
 
 async function main() {
   console.log('Testing PostgreSQL database connection...');
