@@ -1,0 +1,26 @@
+{
+  "name": "@botolahub/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "prisma generate && tsc --build",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "generate": "prisma generate",
+    "db:check": "tsx src/check-connection.ts",
+    "push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0"
+  },
+  "devDependencies": {
+    "@botolahub/config": "workspace:*",
+    "@types/node": "^20.12.12",
+    "prisma": "^5.14.0",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
+  }
+}
