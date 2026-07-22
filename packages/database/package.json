@@ -11,10 +11,13 @@
     "typecheck": "tsc --noEmit",
     "generate": "prisma generate",
     "db:check": "tsx src/check-connection.ts",
-    "push": "prisma db push"
+    "push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
+    "argon2": "^0.40.3",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {

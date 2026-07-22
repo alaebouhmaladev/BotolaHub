@@ -17,7 +17,9 @@
     "db:push": "dotenv -e .env -- pnpm --filter @botolahub/database push",
     "docker:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "docker:down": "docker compose -f infrastructure/docker-compose.yml down",
-    "docker:logs": "docker compose -f infrastructure/docker-compose.yml logs -f"
+    "docker:logs": "docker compose -f infrastructure/docker-compose.yml logs -f",
+    "db:seed": "dotenv -e .env -- pnpm --filter @botolahub/database db:seed",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @botolahub/database db:migrate"
   },
   "devDependencies": {
     "@botolahub/config": "workspace:*",
