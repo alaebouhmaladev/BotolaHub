@@ -1,7 +1,7 @@
-import { getTranslation } from '@botolahub/localization';
+import { getTranslation } from "@botolahub/localization";
 
 export default function AdminPage() {
-  const t = getTranslation('en');
+  const t = getTranslation("en");
 
   return (
     <div>

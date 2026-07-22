@@ -1,4 +1,4 @@
-import { HealthResponse, HealthResponseSchema } from '@botolahub/contracts';
+import { HealthResponse, HealthResponseSchema } from "@botolahub/contracts";
 
 export interface ApiClientConfig {
   baseUrl: string;
@@ -10,7 +10,7 @@ export class BotolaHubApiClient {
   private customFetch: typeof fetch;
 
   constructor(config: ApiClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '');
+    this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.customFetch = config.fetch || globalThis.fetch;
   }
 

@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { calculatePlayerScore } from './index.js';
+import { describe, expect, it } from "vitest";
+import { calculatePlayerScore } from "./index.js";
 
-describe('fantasy-engine rules', () => {
-  it('calculates points correctly for a MID scoring 1 goal and 1 assist with 90 mins played', () => {
-    const score = calculatePlayerScore('MID', {
+describe("fantasy-engine rules", () => {
+  it("calculates points correctly for a MID scoring 1 goal and 1 assist with 90 mins played", () => {
+    const score = calculatePlayerScore("MID", {
       minutesPlayed: 90,
       goals: 1,
       assists: 1,
@@ -22,8 +22,8 @@ describe('fantasy-engine rules', () => {
     expect(score.breakdown).toHaveLength(4);
   });
 
-  it('calculates points correctly for a DEF with a yellow card and 2 goals conceded in 90 mins', () => {
-    const score = calculatePlayerScore('DEF', {
+  it("calculates points correctly for a DEF with a yellow card and 2 goals conceded in 90 mins", () => {
+    const score = calculatePlayerScore("DEF", {
       minutesPlayed: 90,
       goals: 0,
       assists: 0,

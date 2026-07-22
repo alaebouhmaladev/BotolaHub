@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { getLayoutDirection, getTranslation, SupportedLanguage } from '@botolahub/localization';
-import { useEffect, useState } from 'react';
+import {
+  getLayoutDirection,
+  getTranslation,
+  SupportedLanguage,
+} from "@botolahub/localization";
+import { useEffect, useState } from "react";
 
 export default function HomePage() {
-  const [lang, setLang] = useState<SupportedLanguage>('en');
-  const [apiHealth, setApiHealth] = useState<string>('Checking...');
+  const [lang, setLang] = useState<SupportedLanguage>("en");
+  const [apiHealth, setApiHealth] = useState<string>("Checking...");
 
   const t = getTranslation(lang);
   const dir = getLayoutDirection(lang);
@@ -18,15 +22,17 @@ export default function HomePage() {
   useEffect(() => {
     async function checkHealth() {
       try {
-        const res = await fetch('http://localhost:3001/api/v1/health');
+        const res = await fetch("http://localhost:3001/api/v1/health");
         if (res.ok) {
           const data = await res.json();
-          setApiHealth(`Status: ${data.status} | DB: ${data.services?.database} | Redis: ${data.services?.redis}`);
+          setApiHealth(
+            `Status: ${data.status} | DB: ${data.services?.database} | Redis: ${data.services?.redis}`,
+          );
         } else {
-          setApiHealth('API Offline (Status ' + res.status + ')');
+          setApiHealth("API Offline (Status " + res.status + ")");
         }
       } catch (e) {
-        setApiHealth('API Offline');
+        setApiHealth("API Offline");
       }
     }
     checkHealth();
@@ -42,20 +48,20 @@ export default function HomePage() {
 
         <div className="lang-selector">
           <button
-            className={`lang-btn ${lang === 'ar' ? 'active' : ''}`}
-            onClick={() => setLang('ar')}
+            className={`lang-btn ${lang === "ar" ? "active" : ""}`}
+            onClick={() => setLang("ar")}
           >
             العربية
           </button>
           <button
-            className={`lang-btn ${lang === 'fr' ? 'active' : ''}`}
-            onClick={() => setLang('fr')}
+            className={`lang-btn ${lang === "fr" ? "active" : ""}`}
+            onClick={() => setLang("fr")}
           >
             Français
           </button>
           <button
-            className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
-            onClick={() => setLang('en')}
+            className={`lang-btn ${lang === "en" ? "active" : ""}`}
+            onClick={() => setLang("en")}
           >
             English
           </button>
@@ -72,7 +78,9 @@ export default function HomePage() {
             {t.status.healthy}: {apiHealth}
           </div>
           <div className="badge">
-            <span>🌍 {lang.toUpperCase()} ({dir.toUpperCase()})</span>
+            <span>
+              🌍 {lang.toUpperCase()} ({dir.toUpperCase()})
+            </span>
           </div>
           <div className="badge">
             <span>⚽ Botola Pro 2026</span>

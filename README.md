@@ -26,6 +26,7 @@ BotolaHub is an original fantasy-football platform designed for Morocco’s Boto
 ### 1. Prerequisites
 
 Ensure you have installed:
+
 - Node.js >= 20.0.0
 - pnpm >= 9.0.0 (`npm i -g pnpm`)
 - Docker & Docker Compose
@@ -90,13 +91,13 @@ pnpm dev
 
 Or launch applications individually:
 
-| Application | Startup Command | Local URL |
-| :--- | :--- | :--- |
-| **API Server** | `pnpm --filter @botolahub/api dev` | `http://localhost:3001/api/v1` |
-| **Web App** | `pnpm --filter @botolahub/web dev` | `http://localhost:3000` |
-| **Admin App** | `pnpm --filter @botolahub/admin dev` | `http://localhost:3002` |
-| **Mobile App** | `pnpm --filter @botolahub/mobile dev` | Expo Metro Bundler |
-| **Workers** | `pnpm --filter @botolahub/workers dev` | Process logs |
+| Application    | Startup Command                        | Local URL                      |
+| :------------- | :------------------------------------- | :----------------------------- |
+| **API Server** | `pnpm --filter @botolahub/api dev`     | `http://localhost:3001/api/v1` |
+| **Web App**    | `pnpm --filter @botolahub/web dev`     | `http://localhost:3000`        |
+| **Admin App**  | `pnpm --filter @botolahub/admin dev`   | `http://localhost:3002`        |
+| **Mobile App** | `pnpm --filter @botolahub/mobile dev`  | Expo Metro Bundler             |
+| **Workers**    | `pnpm --filter @botolahub/workers dev` | Process logs                   |
 
 ---
 

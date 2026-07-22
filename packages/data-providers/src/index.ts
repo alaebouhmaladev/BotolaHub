@@ -10,7 +10,7 @@ export interface ExternalPlayer {
   providerId: string;
   clubProviderId: string;
   name: string;
-  position: 'GK' | 'DEF' | 'MID' | 'FWD';
+  position: "GK" | "DEF" | "MID" | "FWD";
   priceTenths: number;
 }
 
@@ -20,7 +20,7 @@ export interface ExternalFixture {
   awayClubProviderId: string;
   gameweekNumber: number;
   kickoffTimeUtc: string;
-  status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
+  status: "SCHEDULED" | "LIVE" | "FINISHED";
   homeScore?: number;
   awayScore?: number;
 }
@@ -34,22 +34,22 @@ export interface FootballDataProvider {
 
 export class MockFootballDataProvider implements FootballDataProvider {
   getProviderName(): string {
-    return 'mock';
+    return "mock";
   }
 
   async fetchClubs(): Promise<ExternalClub[]> {
     return [
       {
-        providerId: 'mock-club-1',
-        name: 'Casablanca Athletic',
-        shortName: 'CAS',
-        code: 'CAS',
+        providerId: "mock-club-1",
+        name: "Casablanca Athletic",
+        shortName: "CAS",
+        code: "CAS",
       },
       {
-        providerId: 'mock-club-2',
-        name: 'Rabat Sporting',
-        shortName: 'RAB',
-        code: 'RAB',
+        providerId: "mock-club-2",
+        name: "Rabat Sporting",
+        shortName: "RAB",
+        code: "RAB",
       },
     ];
   }
@@ -57,10 +57,10 @@ export class MockFootballDataProvider implements FootballDataProvider {
   async fetchPlayers(): Promise<ExternalPlayer[]> {
     return [
       {
-        providerId: 'mock-player-1',
-        clubProviderId: 'mock-club-1',
-        name: 'Yassine Bounou (Mock)',
-        position: 'GK',
+        providerId: "mock-player-1",
+        clubProviderId: "mock-club-1",
+        name: "Yassine Bounou (Mock)",
+        position: "GK",
         priceTenths: 55,
       },
     ];
@@ -69,12 +69,12 @@ export class MockFootballDataProvider implements FootballDataProvider {
   async fetchFixtures(gameweekNumber = 1): Promise<ExternalFixture[]> {
     return [
       {
-        providerId: 'mock-fixture-1',
-        homeClubProviderId: 'mock-club-1',
-        awayClubProviderId: 'mock-club-2',
+        providerId: "mock-fixture-1",
+        homeClubProviderId: "mock-club-1",
+        awayClubProviderId: "mock-club-2",
         gameweekNumber,
         kickoffTimeUtc: new Date().toISOString(),
-        status: 'SCHEDULED',
+        status: "SCHEDULED",
       },
     ];
   }

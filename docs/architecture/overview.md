@@ -23,6 +23,7 @@ graph TD
 ## Workspace Layout
 
 ### Applications (`apps/`)
+
 - `web`: User-facing web application built with Next.js 14 App Router and Vanilla CSS design tokens.
 - `admin`: Operations and system management dashboard built with Next.js 14 App Router.
 - `mobile`: Cross-platform mobile app built with Expo React Native and Expo Router.
@@ -30,6 +31,7 @@ graph TD
 - `workers`: Background queue processor for match data ingestion and fantasy scoring calculations using BullMQ.
 
 ### Shared Packages (`packages/`)
+
 - `contracts`: Shared Zod DTO schemas and type definitions.
 - `api-client`: Typed fetch client wrapper for client applications.
 - `database`: Prisma ORM schema and client wrapper.

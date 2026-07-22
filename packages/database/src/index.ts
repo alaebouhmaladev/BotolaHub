@@ -1,9 +1,11 @@
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import dotenv from "dotenv";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
 
-const defaultDbUrl = process.env.DATABASE_URL || 'postgresql://botolahub:botolahub_secret@localhost:5435/botolahub_db?schema=public';
+const defaultDbUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://botolahub:botolahub_secret@localhost:5435/botolahub_db?schema=public";
 
 export const prisma = new PrismaClient({
   datasources: {
@@ -28,7 +30,7 @@ export async function checkDatabaseConnection(): Promise<boolean> {
     await client.$disconnect();
     return true;
   } catch (error) {
-    console.error('Database connection error:', error);
+    console.error("Database connection error:", error);
     return false;
   }
 }

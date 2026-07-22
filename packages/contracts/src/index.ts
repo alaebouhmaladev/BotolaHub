@@ -1,12 +1,12 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const HealthResponseSchema = z.object({
-  status: z.enum(['ok', 'error']),
+  status: z.enum(["ok", "error"]),
   timestamp: z.string(),
   version: z.string(),
   services: z.object({
-    database: z.enum(['connected', 'disconnected']),
-    redis: z.enum(['connected', 'disconnected']),
+    database: z.enum(["connected", "disconnected"]),
+    redis: z.enum(["connected", "disconnected"]),
   }),
 });
 

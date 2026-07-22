@@ -1,26 +1,28 @@
-import { HealthResponse } from '@botolahub/contracts';
-import { checkDatabaseConnection } from '@botolahub/database';
-import { Controller, Get } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import { HealthResponse } from "@botolahub/contracts";
+import { checkDatabaseConnection } from "@botolahub/database";
+import { Controller, Get } from "@nestjs/common";
+import { Redis } from "ioredis";
 
-@Controller('health')
+@Controller("health")
 export class HealthController {
   @Get()
   async checkHealth(): Promise<HealthResponse> {
-    let dbStatus: 'connected' | 'disconnected' = 'disconnected';
-    let redisStatus: 'connected' | 'disconnected' = 'disconnected';
+    let dbStatus: "connected" | "disconnected" = "disconnected";
+    let redisStatus: "connected" | "disconnected" = "disconnected";
 
     // DB Health Check
     try {
       const isDbOk = await checkDatabaseConnection();
-      if (isDbOk) dbStatus = 'connected';
+      if (isDbOk) dbStatus = "connected";
     } catch (e) {
-      dbStatus = 'disconnected';
+      dbStatus = "disconnected";
     }
 
     // Redis Health Check
-    const redisHost = process.env.REDIS_HOST || 'localhost';
-    const redisPort = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379;
+    const redisHost = process.env.REDIS_HOST || "localhost";
+    const redisPort = process.env.REDIS_PORT
+      ? parseInt(process.env.REDIS_PORT, 10)
+      : 6379;
 
     try {
       const redis = new Redis({
@@ -31,18 +33,19 @@ export class HealthController {
       });
 
       const pong = await redis.ping();
-      if (pong === 'PONG') {
-        redisStatus = 'connected';
+      if (pong === "PONG") {
+        redisStatus = "connected";
       }
       await redis.quit();
     } catch (e) {
-      redisStatus = 'disconnected';
+      redisStatus = "disconnected";
     }
 
     return {
-      status: dbStatus === 'connected' && redisStatus === 'connected' ? 'ok' : 'ok', // baseline return 'ok' for API shell readiness
+      status:
+        dbStatus === "connected" && redisStatus === "connected" ? "ok" : "ok", // baseline return 'ok' for API shell readiness
       timestamp: new Date().toISOString(),
-      version: '0.1.0',
+      version: "0.1.0",
       services: {
         database: dbStatus,
         redis: redisStatus,
@@ -50,4 +53,3 @@ export class HealthController {
     };
   }
 }
-
