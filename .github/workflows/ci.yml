@@ -2,9 +2,9 @@ name: BotolaHub CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
 
 jobs:
   validate:
@@ -50,6 +50,9 @@ jobs:
         with:
           version: 9.1.0
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Get pnpm store directory
         shell: bash
         run: |
@@ -64,10 +67,20 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
 
       - name: Generate Prisma client
         run: pnpm db:generate
+        env:
+          DATABASE_URL: "postgresql://botolahub:botolahub_secret@localhost:5432/botolahub_db?schema=public"
+
+      - name: Apply Database Migrations & Seed
+        run: |
+          pnpm --filter @botolahub/database db:migrate
+          pnpm --filter @botolahub/database db:seed
         env:
           DATABASE_URL: "postgresql://botolahub:botolahub_secret@localhost:5432/botolahub_db?schema=public"
 
@@ -88,3 +101,4 @@ jobs:
         run: pnpm build
         env:
           DATABASE_URL: "postgresql://botolahub:botolahub_secret@localhost:5432/botolahub_db?schema=public"
+

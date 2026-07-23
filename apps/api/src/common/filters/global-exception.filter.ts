@@ -22,7 +22,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const response = exception.getResponse();
 
-      if (typeof response === "object" && response !== null && "error" in response) {
+      if (
+        typeof response === "object" &&
+        response !== null &&
+        "error" in response
+      ) {
         // Already structured (e.g. from ZodValidationPipe)
         reply.status(status).send({
           ...(response as object),
@@ -38,7 +42,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message:
             typeof response === "string"
               ? response
-              : (response as Record<string, unknown>)?.message || "An error occurred",
+              : (response as Record<string, unknown>)?.message ||
+                "An error occurred",
         },
         meta: { requestId, timestamp: new Date().toISOString() },
       });

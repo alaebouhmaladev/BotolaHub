@@ -13,6 +13,7 @@ import {
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "./auth.service.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
 import { RegisterDto, LoginDto } from "./dto/auth.dto.js";
@@ -29,11 +30,11 @@ function safeCookie(
   opts: Parameters<FastifyReply["setCookie"]>[2],
 ) {
   try {
-    (res as FastifyReply & { setCookie: (n: string, v: string, o: object) => void }).setCookie(
-      name,
-      value,
-      opts ?? {},
-    );
+    (
+      res as FastifyReply & {
+        setCookie: (n: string, v: string, o: object) => void;
+      }
+    ).setCookie(name, value, opts ?? {});
   } catch {
     // setCookie not available (test environment without @fastify/cookie)
   }
@@ -41,7 +42,9 @@ function safeCookie(
 
 function safeClearCookie(res: FastifyReply, name: string, opts: object) {
   try {
-    (res as FastifyReply & { clearCookie: (n: string, o: object) => void }).clearCookie(name, opts);
+    (
+      res as FastifyReply & { clearCookie: (n: string, o: object) => void }
+    ).clearCookie(name, opts);
   } catch {
     // clearCookie not available
   }
@@ -50,7 +53,10 @@ function safeClearCookie(res: FastifyReply, name: string, opts: object) {
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly jwt: JwtService,
+  ) {}
 
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
@@ -79,7 +85,7 @@ export class AuthController {
       req.ip,
     );
 
-    // Set refresh token in HTTP-only cookie (never exposed to JS)
+    // Set refresh token in HTTP-only cookie for web clients
     safeCookie(res, REFRESH_COOKIE, result.refreshToken, {
       httpOnly: true,
       secure: IS_PROD,
@@ -99,6 +105,7 @@ export class AuthController {
       success: true,
       data: {
         accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
         user: result.user,
       },
     };
@@ -106,7 +113,9 @@ export class AuthController {
 
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Refresh access token using refresh token cookie or body" })
+  @ApiOperation({
+    summary: "Refresh access token using refresh token cookie or body",
+  })
   async refresh(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
@@ -133,6 +142,7 @@ export class AuthController {
       success: true,
       data: {
         accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
         user: result.user,
       },
     };
@@ -146,7 +156,29 @@ export class AuthController {
     @Res({ passthrough: true }) res: FastifyReply,
   ) {
     const cookies = req.cookies as Record<string, string> | undefined;
-    const sessionId = cookies?.[SESSION_COOKIE];
+    const body = req.body as Record<string, string> | undefined;
+
+    let sessionId = cookies?.[SESSION_COOKIE] || body?.sessionId;
+
+    if (!sessionId && body?.refreshToken && body.refreshToken.includes(".")) {
+      sessionId = body.refreshToken.split(".")[0];
+    }
+
+    if (!sessionId) {
+      const authHeader = req.headers["authorization"];
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.slice(7);
+          const payload = this.jwt.decode<{ sessionId?: string }>(token);
+          if (payload?.sessionId) {
+            sessionId = payload.sessionId;
+          }
+        } catch {
+          // ignore decode error
+        }
+      }
+    }
+
     if (sessionId) {
       await this.auth.logout(sessionId);
     }

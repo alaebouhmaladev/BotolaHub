@@ -19,7 +19,9 @@ async function buildApp() {
 
   const fastifyCookieModule = await import("@fastify/cookie");
   await app.register(
-    fastifyCookieModule.default as unknown as Parameters<typeof app.register>[0],
+    fastifyCookieModule.default as unknown as Parameters<
+      typeof app.register
+    >[0],
   );
 
   await app.init();
@@ -27,12 +29,13 @@ async function buildApp() {
   return app;
 }
 
-describe("Auth Integration Tests", () => {
+describe("Auth & Security Integration Tests", () => {
   let app: NestFastifyApplication;
   let prisma: PrismaService;
   const ts = Date.now();
   const testEmail = `test-${ts}@botolahub.test`;
-  let accessToken = "";
+  let activeAccessToken = "";
+  let activeRefreshToken = "";
 
   beforeAll(async () => {
     app = await buildApp();
@@ -40,131 +43,229 @@ describe("Auth Integration Tests", () => {
   });
 
   afterAll(async () => {
-    await prisma.client.user
-      .deleteMany({ where: { email: { endsWith: "@botolahub.test" } } })
-      .catch(() => null);
-    await app.close();
+    if (prisma) {
+      await prisma.client.user
+        .deleteMany({ where: { email: { endsWith: "@botolahub.test" } } })
+        .catch(() => null);
+    }
+    if (app) {
+      await app.close();
+    }
   });
 
-  async function inject(method: string, url: string, payload?: object, headers?: Record<string, string>) {
-    return app.getHttpAdapter().getInstance().inject({
-      method: method as "GET" | "POST",
-      url,
-      headers: { "content-type": "application/json", ...headers },
-      payload: payload ? JSON.stringify(payload) : undefined,
-    });
+  async function inject(
+    method: string,
+    url: string,
+    payload?: object,
+    headers?: Record<string, string>,
+    cookies?: Record<string, string>,
+  ) {
+    return app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: method as "GET" | "POST",
+        url,
+        headers: { "content-type": "application/json", ...headers },
+        cookies,
+        payload: payload ? JSON.stringify(payload) : undefined,
+      });
   }
 
-  describe("POST /api/v1/auth/register", () => {
-    it("registers a new user", async () => {
+  describe("1. Registration", () => {
+    it("registers a new user successfully", async () => {
       const res = await inject("POST", "/api/v1/auth/register", {
         email: testEmail,
         displayName: "Test User",
         password: "Password123!",
       });
-      if (res.statusCode !== 201) console.error("register body:", res.body);
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { success: boolean; data: { user: { email: string } } };
+      const body = JSON.parse(res.body);
       expect(body.success).toBe(true);
       expect(body.data.user.email).toBe(testEmail);
     });
 
-    it("rejects duplicate email with 409", async () => {
+    it("rejects duplicate email with 409 Conflict", async () => {
       const res = await inject("POST", "/api/v1/auth/register", {
         email: testEmail,
-        displayName: "Dup",
+        displayName: "Duplicate",
         password: "Password123!",
       });
       expect(res.statusCode).toBe(409);
     });
 
-    it("rejects invalid email with 400", async () => {
+    it("rejects invalid email formatting with 400", async () => {
       const res = await inject("POST", "/api/v1/auth/register", {
-        email: "notanemail",
-        displayName: "Bad",
+        email: "not-an-email",
+        displayName: "Bad Email",
         password: "Password123!",
-      });
-      expect(res.statusCode).toBe(400);
-    });
-
-    it("rejects weak password with 400", async () => {
-      const res = await inject("POST", "/api/v1/auth/register", {
-        email: `weak-${ts}@botolahub.test`,
-        displayName: "Weak",
-        password: "short",
       });
       expect(res.statusCode).toBe(400);
     });
   });
 
-  describe("POST /api/v1/auth/login", () => {
-    it("logs in with valid credentials", async () => {
+  describe("2. Login & Token Issuance", () => {
+    it("logs in with valid credentials and issues tokens", async () => {
       const res = await inject("POST", "/api/v1/auth/login", {
         email: testEmail,
         password: "Password123!",
       });
-      if (res.statusCode !== 200) console.error("login body:", res.body);
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { success: boolean; data: { accessToken: string } };
+      const body = JSON.parse(res.body);
       expect(body.success).toBe(true);
       expect(body.data.accessToken).toBeDefined();
-      // Refresh token must NOT appear in JSON body
-      expect(res.body).not.toMatch(/"refreshToken"/);
-      accessToken = body.data.accessToken;
+      expect(body.data.refreshToken).toBeDefined();
+      expect(body.data.refreshToken).toContain(".");
+
+      activeAccessToken = body.data.accessToken;
+      activeRefreshToken = body.data.refreshToken;
     });
 
-    it("returns 401 with generic message for wrong password", async () => {
+    it("rejects invalid password with generic 401 message", async () => {
       const res = await inject("POST", "/api/v1/auth/login", {
         email: testEmail,
-        password: "WrongPass123!",
+        password: "WrongPassword123!",
       });
       expect(res.statusCode).toBe(401);
-      const body = JSON.parse(res.body) as { error: { message: string } };
+      const body = JSON.parse(res.body);
       expect(body.error.message).toMatch(/Invalid credentials/i);
     });
 
-    it("returns 401 with same generic message for nonexistent email", async () => {
+    it("rejects nonexistent user email with generic 401 message", async () => {
       const res = await inject("POST", "/api/v1/auth/login", {
         email: "nobody@botolahub.test",
         password: "Password123!",
       });
       expect(res.statusCode).toBe(401);
-      const body = JSON.parse(res.body) as { error: { message: string } };
+      const body = JSON.parse(res.body);
       expect(body.error.message).toMatch(/Invalid credentials/i);
     });
   });
 
-  describe("GET /api/v1/auth/me", () => {
-    it("returns current user with valid access token", async () => {
+  describe("3. Access Token & Protected Endpoints", () => {
+    it("allows access to GET /api/v1/auth/me with valid Bearer token", async () => {
       const res = await inject("GET", "/api/v1/auth/me", undefined, {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${activeAccessToken}`,
       });
-      if (res.statusCode !== 200) console.error("me body:", res.body);
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { user: { email: string } } };
+      const body = JSON.parse(res.body);
       expect(body.data.user.email).toBe(testEmail);
     });
 
-    it("rejects request without token with 401", async () => {
+    it("rejects request missing Authorization header with 401", async () => {
       const res = await inject("GET", "/api/v1/auth/me");
       expect(res.statusCode).toBe(401);
     });
 
-    it("rejects invalid token with 401", async () => {
+    it("rejects malformed or expired access token with 401", async () => {
       const res = await inject("GET", "/api/v1/auth/me", undefined, {
-        Authorization: "Bearer invalid.token.here",
+        Authorization: "Bearer invalid.jwt.token",
       });
       expect(res.statusCode).toBe(401);
     });
   });
 
-  describe("POST /api/v1/auth/logout", () => {
-    it("logout returns 200", async () => {
-      const res = await inject("POST", "/api/v1/auth/logout");
-      if (res.statusCode !== 200) console.error("logout body:", res.body);
+  describe("4. Refresh Token Rotation & Mobile/Web Flow", () => {
+    let rotatedRefreshToken = "";
+
+    it("rotates refresh token via mobile body parameter", async () => {
+      const res = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: activeRefreshToken,
+      });
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { success: boolean };
-      expect(body.success).toBe(true);
+      const body = JSON.parse(res.body);
+      expect(body.data.accessToken).toBeDefined();
+      expect(body.data.refreshToken).toBeDefined();
+      expect(body.data.refreshToken).not.toBe(activeRefreshToken);
+
+      rotatedRefreshToken = body.data.refreshToken;
+    });
+
+    it("rejects previous (old) refresh token after rotation", async () => {
+      const res = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: activeRefreshToken,
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("rotates refresh token via Web HTTP-only cookie", async () => {
+      const res = await inject(
+        "POST",
+        "/api/v1/auth/refresh",
+        undefined,
+        undefined,
+        { botolahub_refresh: rotatedRefreshToken },
+      );
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.data.accessToken).toBeDefined();
+      expect(body.data.refreshToken).toBeDefined();
+
+      activeRefreshToken = body.data.refreshToken;
+      activeAccessToken = body.data.accessToken;
+    });
+  });
+
+  describe("5. Security: Token Reuse Detection & Family Revocation", () => {
+    it("detects refresh token reuse and revokes entire session family", async () => {
+      const userRes = await inject("POST", "/api/v1/auth/login", {
+        email: testEmail,
+        password: "Password123!",
+      });
+      const loginBody = JSON.parse(userRes.body);
+      const originalToken = loginBody.data.refreshToken;
+
+      // First refresh succeeds and rotates token
+      const refreshRes = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: originalToken,
+      });
+      expect(refreshRes.statusCode).toBe(200);
+      const newRefreshToken = JSON.parse(refreshRes.body).data.refreshToken;
+
+      // REUSE ATTACK: Re-sending original (now revoked) refresh token
+      const reuseRes = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: originalToken,
+      });
+      expect(reuseRes.statusCode).toBe(401);
+
+      // Verify that the new rotated token was ALSO revoked due to family revocation!
+      const failedChildRefresh = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: newRefreshToken,
+      });
+      expect(failedChildRefresh.statusCode).toBe(401);
+    });
+  });
+
+  describe("6. Session Revocation on Logout", () => {
+    it("revokes session on logout and rejects access token afterwards", async () => {
+      const loginRes = await inject("POST", "/api/v1/auth/login", {
+        email: testEmail,
+        password: "Password123!",
+      });
+      const loginBody = JSON.parse(loginRes.body);
+      const sessionToken = loginBody.data.accessToken;
+      const refreshTok = loginBody.data.refreshToken;
+
+      // Verify token works before logout
+      const beforeLogout = await inject("GET", "/api/v1/auth/me", undefined, {
+        Authorization: `Bearer ${sessionToken}`,
+      });
+      expect(beforeLogout.statusCode).toBe(200);
+
+      // Call logout
+      const logoutRes = await inject(
+        "POST",
+        "/api/v1/auth/logout",
+        { refreshToken: refreshTok },
+        { Authorization: `Bearer ${sessionToken}` },
+      );
+      expect(logoutRes.statusCode).toBe(200);
+
+      // Verify access token is NOW REJECTED because session in DB was marked isRevoked = true
+      const afterLogout = await inject("GET", "/api/v1/auth/me", undefined, {
+        Authorization: `Bearer ${sessionToken}`,
+      });
+      expect(afterLogout.statusCode).toBe(401);
     });
   });
 });

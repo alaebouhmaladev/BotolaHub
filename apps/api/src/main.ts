@@ -21,7 +21,9 @@ async function bootstrap() {
   // Register cookie support (use unknown cast for type compatibility)
   const fastifyCookieModule = await import("@fastify/cookie");
   await (app as NestFastifyApplication).register(
-    fastifyCookieModule.default as unknown as Parameters<typeof app.register>[0],
+    fastifyCookieModule.default as unknown as Parameters<
+      typeof app.register
+    >[0],
   );
 
   // Rate limiting

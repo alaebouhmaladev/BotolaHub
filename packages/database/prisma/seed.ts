@@ -10,7 +10,12 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { PrismaClient, Position, GameweekStatus, FixtureStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  Position,
+  GameweekStatus,
+  FixtureStatus,
+} from "@prisma/client";
 import * as argon2 from "argon2";
 
 const prisma = new PrismaClient();
@@ -24,26 +29,126 @@ const GAMEWEEK_COUNT = 30;
 
 // 16 original placeholder clubs (no real crests, no trademark names)
 const CLUBS = [
-  { short: "WAC", name: "Western Athletic Club", nameAr: "نادي الغرب الرياضي", nameFr: "Club Athlétique de l'Ouest", city: "Casablanca" },
-  { short: "RCA", name: "Red Crescent Athletic", nameAr: "الهلال الأحمر الرياضي", nameFr: "Athlétique Croissant Rouge", city: "Casablanca" },
-  { short: "FAR", name: "Far Stars FC", nameAr: "نجوم الأفق", nameFr: "FC Étoiles Lointaines", city: "Rabat" },
-  { short: "MAJ", name: "Maghreb Juniors FC", nameAr: "شباب المغرب", nameFr: "FC Jeunesse Maghreb", city: "Fès" },
-  { short: "OLM", name: "Olive Mountain FC", nameAr: "نادي الجبل الأخضر", nameFr: "FC Montagne Verte", city: "Marrakech" },
-  { short: "AHN", name: "Atlas Highlands", nameAr: "أطلس الهضاب", nameFr: "Hauts Atlas FC", city: "Meknès" },
-  { short: "TAN", name: "Tangerines FC", nameAr: "نادي البرتقال", nameFr: "FC Les Oranges", city: "Tanger" },
-  { short: "OUA", name: "Oualili United", nameAr: "وليلي المتحد", nameFr: "Oualili United FC", city: "Meknès" },
-  { short: "CRT", name: "Crescent Titans", nameAr: "عمالقة الهلال", nameFr: "Titans Croissant FC", city: "Oujda" },
-  { short: "SOU", name: "Souss Lions", nameAr: "أسود سوس", nameFr: "Lions du Souss FC", city: "Agadir" },
-  { short: "KHM", name: "Khamsin Warriors", nameAr: "محاربو الخمسين", nameFr: "FC Guerriers du Vent", city: "Dakhla" },
-  { short: "BNI", name: "Beni Stars FC", nameAr: "نجوم بني", nameFr: "FC Étoiles de Beni", city: "Al Hoceïma" },
-  { short: "SAF", name: "Saffron United", nameAr: "الزعفران المتحد", nameFr: "Safran United FC", city: "Taliouine" },
-  { short: "SIL", name: "Silver Dunes FC", nameAr: "الكثبان الفضية", nameFr: "FC Dunes d'Argent", city: "Laayoune" },
-  { short: "GHR", name: "Gharb Rovers", nameAr: "متجولو الغرب", nameFr: "Rovers du Gharb FC", city: "Kénitra" },
-  { short: "ZIL", name: "Zilzal Thunder", nameAr: "رعد الزلزال", nameFr: "Tonnerre Zilzal FC", city: "Nador" },
+  {
+    short: "WAC",
+    name: "Western Athletic Club",
+    nameAr: "نادي الغرب الرياضي",
+    nameFr: "Club Athlétique de l'Ouest",
+    city: "Casablanca",
+  },
+  {
+    short: "RCA",
+    name: "Red Crescent Athletic",
+    nameAr: "الهلال الأحمر الرياضي",
+    nameFr: "Athlétique Croissant Rouge",
+    city: "Casablanca",
+  },
+  {
+    short: "FAR",
+    name: "Far Stars FC",
+    nameAr: "نجوم الأفق",
+    nameFr: "FC Étoiles Lointaines",
+    city: "Rabat",
+  },
+  {
+    short: "MAJ",
+    name: "Maghreb Juniors FC",
+    nameAr: "شباب المغرب",
+    nameFr: "FC Jeunesse Maghreb",
+    city: "Fès",
+  },
+  {
+    short: "OLM",
+    name: "Olive Mountain FC",
+    nameAr: "نادي الجبل الأخضر",
+    nameFr: "FC Montagne Verte",
+    city: "Marrakech",
+  },
+  {
+    short: "AHN",
+    name: "Atlas Highlands",
+    nameAr: "أطلس الهضاب",
+    nameFr: "Hauts Atlas FC",
+    city: "Meknès",
+  },
+  {
+    short: "TAN",
+    name: "Tangerines FC",
+    nameAr: "نادي البرتقال",
+    nameFr: "FC Les Oranges",
+    city: "Tanger",
+  },
+  {
+    short: "OUA",
+    name: "Oualili United",
+    nameAr: "وليلي المتحد",
+    nameFr: "Oualili United FC",
+    city: "Meknès",
+  },
+  {
+    short: "CRT",
+    name: "Crescent Titans",
+    nameAr: "عمالقة الهلال",
+    nameFr: "Titans Croissant FC",
+    city: "Oujda",
+  },
+  {
+    short: "SOU",
+    name: "Souss Lions",
+    nameAr: "أسود سوس",
+    nameFr: "Lions du Souss FC",
+    city: "Agadir",
+  },
+  {
+    short: "KHM",
+    name: "Khamsin Warriors",
+    nameAr: "محاربو الخمسين",
+    nameFr: "FC Guerriers du Vent",
+    city: "Dakhla",
+  },
+  {
+    short: "BNI",
+    name: "Beni Stars FC",
+    nameAr: "نجوم بني",
+    nameFr: "FC Étoiles de Beni",
+    city: "Al Hoceïma",
+  },
+  {
+    short: "SAF",
+    name: "Saffron United",
+    nameAr: "الزعفران المتحد",
+    nameFr: "Safran United FC",
+    city: "Taliouine",
+  },
+  {
+    short: "SIL",
+    name: "Silver Dunes FC",
+    nameAr: "الكثبان الفضية",
+    nameFr: "FC Dunes d'Argent",
+    city: "Laayoune",
+  },
+  {
+    short: "GHR",
+    name: "Gharb Rovers",
+    nameAr: "متجولو الغرب",
+    nameFr: "Rovers du Gharb FC",
+    city: "Kénitra",
+  },
+  {
+    short: "ZIL",
+    name: "Zilzal Thunder",
+    nameAr: "رعد الزلزال",
+    nameFr: "Tonnerre Zilzal FC",
+    city: "Nador",
+  },
 ] as const;
 
 // Position distribution: 2 GK, 5 DEF, 5 MID, 3 FWD per squad → spread across clubs
-const POSITION_DIST: { position: Position; count: number; priceRange: [number, number] }[] = [
+const POSITION_DIST: {
+  position: Position;
+  count: number;
+  priceRange: [number, number];
+}[] = [
   { position: "GK", count: 2, priceRange: [45, 65] },
   { position: "DEF", count: 5, priceRange: [45, 80] },
   { position: "MID", count: 5, priceRange: [55, 100] },
@@ -55,19 +160,54 @@ const PLAYERS_PER_CLUB = 15;
 
 // Common Moroccan first and last names (placeholder — no real player data)
 const FIRST_NAMES = [
-  "Yassine", "Omar", "Hamza", "Nabil", "Rachid", "Amine", "Khalid",
-  "Mehdi", "Soufiane", "Bilal", "Ayman", "Tariq", "Imad", "Hicham", "Abderrahim",
-  "Zakaria", "Iliass", "Ayoub", "Saad", "Moussa",
+  "Yassine",
+  "Omar",
+  "Hamza",
+  "Nabil",
+  "Rachid",
+  "Amine",
+  "Khalid",
+  "Mehdi",
+  "Soufiane",
+  "Bilal",
+  "Ayman",
+  "Tariq",
+  "Imad",
+  "Hicham",
+  "Abderrahim",
+  "Zakaria",
+  "Iliass",
+  "Ayoub",
+  "Saad",
+  "Moussa",
 ];
 const LAST_NAMES = [
-  "Alaoui", "Benali", "Hamdane", "Filali", "Mansouri", "Chraibi", "Tahiri",
-  "Moussaoui", "Lahlou", "Berrada", "Ouahabi", "Zeroual", "Benhaddou",
-  "Raji", "Kettani", "Bensouda", "Amazigh", "Benchekroun", "Tazi", "Naciri",
+  "Alaoui",
+  "Benali",
+  "Hamdane",
+  "Filali",
+  "Mansouri",
+  "Chraibi",
+  "Tahiri",
+  "Moussaoui",
+  "Lahlou",
+  "Berrada",
+  "Ouahabi",
+  "Zeroual",
+  "Benhaddou",
+  "Raji",
+  "Kettani",
+  "Bensouda",
+  "Amazigh",
+  "Benchekroun",
+  "Tazi",
+  "Naciri",
 ];
 
 function seededName(clubIndex: number, playerIndex: number) {
   const fi = (clubIndex * PLAYERS_PER_CLUB + playerIndex) % FIRST_NAMES.length;
-  const li = (clubIndex * PLAYERS_PER_CLUB + playerIndex + 3) % LAST_NAMES.length;
+  const li =
+    (clubIndex * PLAYERS_PER_CLUB + playerIndex + 3) % LAST_NAMES.length;
   return { firstName: FIRST_NAMES[fi]!, lastName: LAST_NAMES[li]! };
 }
 
@@ -98,7 +238,12 @@ async function main() {
 
   // ─── Season ────────────────────────────────────────────────────────────────
   const season = await prisma.season.upsert({
-    where: { competitionId_label: { competitionId: competition.id, label: SEASON_LABEL } },
+    where: {
+      competitionId_label: {
+        competitionId: competition.id,
+        label: SEASON_LABEL,
+      },
+    },
     create: {
       id: "season-2024-25",
       competitionId: competition.id,
@@ -115,7 +260,9 @@ async function main() {
   const clubRecords: Array<{ id: string; shortName: string }> = [];
   for (const [i, c] of CLUBS.entries()) {
     const club = await prisma.club.upsert({
-      where: { seasonId_shortName: { seasonId: season.id, shortName: c.short } },
+      where: {
+        seasonId_shortName: { seasonId: season.id, shortName: c.short },
+      },
       create: {
         id: `club-${c.short.toLowerCase()}`,
         seasonId: season.id,
@@ -140,11 +287,21 @@ async function main() {
       for (let p = 0; p < pd.count; p++) {
         const { firstName, lastName } = seededName(ci, playerIndex);
         const playerId = `player-${club.shortName.toLowerCase()}-${playerIndex}`;
-        const price = seededPrice(pd.priceRange[0], pd.priceRange[1], ci * 100 + playerIndex);
+        const price = seededPrice(
+          pd.priceRange[0],
+          pd.priceRange[1],
+          ci * 100 + playerIndex,
+        );
 
         await prisma.player.upsert({
           where: { id: playerId },
-          create: { id: playerId, firstName, lastName, position: pd.position, nationality: "Moroccan" },
+          create: {
+            id: playerId,
+            firstName,
+            lastName,
+            position: pd.position,
+            nationality: "Moroccan",
+          },
           update: {},
         });
 
@@ -214,7 +371,8 @@ async function main() {
       kickoff.setHours(kickoff.getHours() + m * 2);
 
       const fixtureId = `fix-gw${gw}-${m}`;
-      const fixtureStatus: FixtureStatus = gw < 4 ? "FINISHED" : gw === 4 ? "LIVE" : "SCHEDULED";
+      const fixtureStatus: FixtureStatus =
+        gw < 4 ? "FINISHED" : gw === 4 ? "LIVE" : "SCHEDULED";
 
       await prisma.fixture.upsert({
         where: { id: fixtureId },
@@ -225,8 +383,8 @@ async function main() {
           awayClubId: clubRecords[awayIdx]!.id,
           status: fixtureStatus,
           kickoffUtc: kickoff,
-          homeScore: gw < 4 ? (m % 3) : null,
-          awayScore: gw < 4 ? ((m + 1) % 2) : null,
+          homeScore: gw < 4 ? m % 3 : null,
+          awayScore: gw < 4 ? (m + 1) % 2 : null,
         },
         update: {},
       });
@@ -264,7 +422,9 @@ async function main() {
   });
 
   // ─── Dev users ─────────────────────────────────────────────────────────────
-  const devPassword = await argon2.hash("Password123!", { type: argon2.argon2id });
+  const devPassword = await argon2.hash("Password123!", {
+    type: argon2.argon2id,
+  });
 
   await prisma.user.upsert({
     where: { email: "admin@botolahub.dev" },
@@ -305,7 +465,9 @@ async function main() {
     update: {},
   });
 
-  console.log(`✅ Dev users: admin@botolahub.dev, player1@botolahub.dev, player2@botolahub.dev (all pw: Password123!)`);
+  console.log(
+    `✅ Dev users: admin@botolahub.dev, player1@botolahub.dev, player2@botolahub.dev (all pw: Password123!)`,
+  );
   console.log("\n🎉 Seed completed successfully!");
 }
 

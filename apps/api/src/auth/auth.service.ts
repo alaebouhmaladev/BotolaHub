@@ -42,7 +42,13 @@ export class AuthService {
         passwordHash,
         preferredLanguage: dto.preferredLanguage,
       },
-      select: { id: true, email: true, displayName: true, role: true, preferredLanguage: true },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        preferredLanguage: true,
+      },
     });
 
     return user;
@@ -53,7 +59,6 @@ export class AuthService {
       where: { email: dto.email.toLowerCase() },
     });
 
-    // Generic error – do not reveal whether email exists
     const INVALID_MSG = "Invalid credentials";
 
     if (!user) {
@@ -69,36 +74,106 @@ export class AuthService {
   }
 
   async refresh(rawToken: string) {
-    // Load candidate sessions (non-revoked, non-expired)
-    const sessions = await this.prisma.client.userSession.findMany({
-      where: { isRevoked: false, expiresAt: { gt: new Date() } },
-      include: { user: true },
+    const dotIndex = rawToken.indexOf(".");
+    if (dotIndex === -1) {
+      throw new UnauthorizedException("Invalid refresh token format");
+    }
+
+    const sessionId = rawToken.slice(0, dotIndex);
+    const secret = rawToken.slice(dotIndex + 1);
+
+    if (!sessionId || !secret) {
+      throw new UnauthorizedException("Invalid refresh token format");
+    }
+
+    const session = await this.prisma.client.userSession.findUnique({
+      where: { id: sessionId },
     });
 
-    let matched: (typeof sessions)[0] | null = null;
-    for (const s of sessions) {
-      try {
-        const ok = await argon2.verify(s.refreshTokenHash, rawToken);
-        if (ok) {
-          matched = s;
-          break;
-        }
-      } catch {
-        // hash mismatch – continue
+    if (!session) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    // Reuse detection: if a revoked token is presented, revoke all active sessions in the family
+    if (session.isRevoked) {
+      await this.prisma.client.userSession.updateMany({
+        where: { familyId: session.familyId, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      throw new UnauthorizedException(
+        "Security breach: Refresh token reuse detected. All sessions revoked.",
+      );
+    }
+
+    if (session.expiresAt < new Date()) {
+      throw new UnauthorizedException("Refresh token expired");
+    }
+
+    const validSecret = await argon2.verify(session.refreshTokenHash, secret);
+    if (!validSecret) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    // Rotate transactionally with concurrency protection
+    const newSecret = uuidv4() + uuidv4();
+    const newSecretHash = await argon2.hash(newSecret, {
+      type: argon2.argon2id,
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
+
+    const newSession = await this.prisma.client.$transaction(async (tx) => {
+      const updated = await tx.userSession.updateMany({
+        where: { id: session.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+
+      if (updated.count === 0) {
+        throw new UnauthorizedException("Concurrent refresh request failed");
       }
-    }
 
-    if (!matched) {
-      throw new UnauthorizedException("Invalid or expired refresh token");
-    }
+      const created = await tx.userSession.create({
+        data: {
+          userId: session.userId,
+          refreshTokenHash: newSecretHash,
+          familyId: session.familyId,
+          userAgent: session.userAgent,
+          ipAddress: session.ipAddress,
+          expiresAt,
+        },
+      });
 
-    // Rotate: revoke old, create new
-    await this.prisma.client.userSession.update({
-      where: { id: matched.id },
-      data: { isRevoked: true },
+      await tx.userSession.update({
+        where: { id: session.id },
+        data: { replacedBy: created.id },
+      });
+
+      return created;
     });
 
-    return this.createSession(matched.userId, matched.userAgent ?? undefined, matched.ipAddress ?? undefined);
+    const user = await this.prisma.client.user.findUniqueOrThrow({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        preferredLanguage: true,
+      },
+    });
+
+    const accessToken = this.jwt.sign(
+      { sub: user.id, sessionId: newSession.id, role: user.role },
+      { expiresIn: ACCESS_TOKEN_TTL },
+    );
+
+    return {
+      accessToken,
+      refreshToken: `${newSession.id}.${newSecret}`,
+      sessionId: newSession.id,
+      user,
+    };
   }
 
   async logout(sessionId: string) {
@@ -111,26 +186,28 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const user = await this.prisma.client.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, displayName: true, role: true, preferredLanguage: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        preferredLanguage: true,
+        createdAt: true,
+      },
     });
     if (!user) throw new UnauthorizedException("User not found");
     return user;
   }
 
-  async validateAccessToken(token: string) {
-    try {
-      const payload = this.jwt.verify<{ sub: string; sessionId: string }>(token);
-      return payload;
-    } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
-    }
-  }
-
-  // ─── Private helpers ─────────────────────────────────────────────────────
-
-  private async createSession(userId: string, userAgent?: string, ipAddress?: string) {
-    const rawRefreshToken = uuidv4() + "-" + uuidv4();
-    const refreshTokenHash = await argon2.hash(rawRefreshToken, { type: argon2.argon2id });
+  private async createSession(
+    userId: string,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
+    const secret = uuidv4() + uuidv4();
+    const refreshTokenHash = await argon2.hash(secret, {
+      type: argon2.argon2id,
+    });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
@@ -147,7 +224,13 @@ export class AuthService {
 
     const user = await this.prisma.client.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { id: true, email: true, displayName: true, role: true, preferredLanguage: true },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        preferredLanguage: true,
+      },
     });
 
     const accessToken = this.jwt.sign(
@@ -157,7 +240,7 @@ export class AuthService {
 
     return {
       accessToken,
-      refreshToken: rawRefreshToken,
+      refreshToken: `${session.id}.${secret}`,
       sessionId: session.id,
       user,
     };

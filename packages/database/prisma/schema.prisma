@@ -92,6 +92,8 @@ model UserSession {
   id               String   @id @default(uuid())
   userId           String
   refreshTokenHash String   @unique
+  familyId         String   @default(uuid())
+  replacedBy       String?
   userAgent        String?
   ipAddress        String?
   isRevoked        Boolean  @default(false)
@@ -102,6 +104,7 @@ model UserSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
   @@index([refreshTokenHash])
 }
 
