@@ -468,6 +468,33 @@ async function main() {
   console.log(
     `✅ Dev users: admin@botolahub.dev, player1@botolahub.dev, player2@botolahub.dev (all pw: Password123!)`,
   );
+
+  // ─── Verification Counts ──────────────────────────────────────────────────
+  const compCount = await prisma.competition.count();
+  const activeSeasonCount = await prisma.season.count({
+    where: { isActive: true },
+  });
+  const clubCount = await prisma.club.count();
+  const playerCount = await prisma.player.count();
+  const gwCount = await prisma.gameweek.count();
+
+  console.log("\n📊 Verification Summary:");
+  console.log(`- Competitions: ${compCount} (Expected: 1)`);
+  console.log(`- Active Seasons: ${activeSeasonCount} (Expected: 1)`);
+  console.log(`- Clubs: ${clubCount} (Expected: 16)`);
+  console.log(`- Players: ${playerCount} (Expected: ≥ 240)`);
+  console.log(`- Gameweeks: ${gwCount} (Expected: 30)`);
+
+  if (
+    compCount !== 1 ||
+    activeSeasonCount !== 1 ||
+    clubCount !== 16 ||
+    playerCount < 240 ||
+    gwCount !== 30
+  ) {
+    throw new Error("❌ Seed count verification failed!");
+  }
+
   console.log("\n🎉 Seed completed successfully!");
 }
 

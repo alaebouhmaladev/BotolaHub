@@ -60,16 +60,20 @@ describe("Auth & Security Integration Tests", () => {
     headers?: Record<string, string>,
     cookies?: Record<string, string>,
   ) {
-    return app
+    const finalHeaders = payload
+      ? { "content-type": "application/json", ...headers }
+      : headers;
+    const res = await app
       .getHttpAdapter()
       .getInstance()
       .inject({
         method: method as "GET" | "POST",
         url,
-        headers: { "content-type": "application/json", ...headers },
+        headers: finalHeaders,
         cookies,
         payload: payload ? JSON.stringify(payload) : undefined,
       });
+    return res;
   }
 
   describe("1. Registration", () => {
@@ -181,13 +185,6 @@ describe("Auth & Security Integration Tests", () => {
       rotatedRefreshToken = body.data.refreshToken;
     });
 
-    it("rejects previous (old) refresh token after rotation", async () => {
-      const res = await inject("POST", "/api/v1/auth/refresh", {
-        refreshToken: activeRefreshToken,
-      });
-      expect(res.statusCode).toBe(401);
-    });
-
     it("rotates refresh token via Web HTTP-only cookie", async () => {
       const res = await inject(
         "POST",
@@ -203,6 +200,13 @@ describe("Auth & Security Integration Tests", () => {
 
       activeRefreshToken = body.data.refreshToken;
       activeAccessToken = body.data.accessToken;
+    });
+
+    it("rejects previous (old) refresh token after rotation", async () => {
+      const res = await inject("POST", "/api/v1/auth/refresh", {
+        refreshToken: rotatedRefreshToken,
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 

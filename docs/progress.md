@@ -25,11 +25,11 @@
 
 ## Day 2 Status — Domain Model, Seed Data & Secure Authentication
 
-- **Outcome**: Completed Day 2 Tasks 2.1 - 2.5 successfully.
-- **Prisma Schema & Domain Model**: Designed complete 24-model Prisma schema (User, Season, Competition, Team, Player, Match, Gameweek, Squad, Transfers, Leagues, etc.) and generated initial migration (`20260722000000_day2_initial_domain_model`).
-- **Seed Data**: Built deterministic, idempotent seed script (`packages/database/prisma/seed.ts`).
-- **API Authentication**: Built Argon2id password hashing, HTTP-only cookie rotating refresh sessions, rate limiting, OpenAPI Swagger, and Zod validation.
-- **Web Authentication UI**: Added Login (`/login`), Register (`/register`), Logout, and User Dashboard (`/dashboard`) routes with persistent `AuthContext`.
-- **Mobile Authentication UI**: Added Expo Router screens for Login (`/login`), Register (`/register`), Logout, and User Profile (`/profile`) using `expo-secure-store` for token security.
-- **Typed API Client**: Extended `@botolahub/api-client` and `@botolahub/contracts` with auth methods and schemas.
-- **CI Pipeline Repair**: Updated `.github/workflows/ci.yml` to automatically push schema & seed PostgreSQL before running integration test suite.
+- **Outcome**: Completed Day 2 Tasks 2.1 - 2.5 & Day 1/2 Stabilization successfully.
+- **Prisma Schema & Domain Model**: Designed complete 24-model Prisma schema and generated initial migrations (`20260722000000_day2_initial_domain_model` & `20260723000000_add_session_family_and_rotation`).
+- **Seed Data & Idempotency**: Built deterministic, idempotent seed script verifying 1 Competition, 1 Active Season, 16 Clubs, 240 Players, and 30 Gameweeks with assertions.
+- **Scalable API Authentication**: Built $O(1)$ compound refresh tokens (`sessionId.secret`), Argon2id secret hashing, transactional rotation, token family tracking (`familyId`), and reuse attack detection.
+- **Session Revocation & Guard Security**: Enforced database session verification inside `JwtAuthGuard` checking session existence, ownership, revocation, and expiration.
+- **Web Authentication UI**: Removed access tokens from `localStorage`. Implemented HTTP-only cookies and automatic session restoration on page reload in `AuthContext`.
+- **Mobile Authentication UI**: Stored refresh tokens in Expo `SecureStore` with token rotation and session restoration.
+- **CI Pipeline Stabilization**: Configured `.github/workflows/ci.yml` with `pnpm install --frozen-lockfile`, `master` branch tracking, `pnpm format:check`, and real Prisma migrations.

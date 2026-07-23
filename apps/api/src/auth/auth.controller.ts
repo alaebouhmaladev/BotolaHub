@@ -5,6 +5,7 @@ import {
   Body,
   Res,
   Req,
+  Inject,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -54,8 +55,8 @@ function safeClearCookie(res: FastifyReply, name: string, opts: object) {
 @Controller("auth")
 export class AuthController {
   constructor(
-    private readonly auth: AuthService,
-    private readonly jwt: JwtService,
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(JwtService) private readonly jwt: JwtService,
   ) {}
 
   @Post("register")

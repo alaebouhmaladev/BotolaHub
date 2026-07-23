@@ -22,28 +22,41 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const response = exception.getResponse();
 
-      if (
-        typeof response === "object" &&
-        response !== null &&
-        "error" in response
-      ) {
-        // Already structured (e.g. from ZodValidationPipe)
-        reply.status(status).send({
-          ...(response as object),
-          meta: { requestId, timestamp: new Date().toISOString() },
-        });
-        return;
+      let errorMessage = "An error occurred";
+      let details: unknown = undefined;
+
+      if (typeof response === "string") {
+        errorMessage = response;
+      } else if (typeof response === "object" && response !== null) {
+        const resObj = response as Record<string, unknown>;
+        if (typeof resObj.message === "string") {
+          errorMessage = resObj.message;
+        } else if (Array.isArray(resObj.message)) {
+          errorMessage = resObj.message.join(", ");
+        }
+        if (
+          "error" in resObj &&
+          typeof resObj.error === "object" &&
+          resObj.error !== null
+        ) {
+          // Already formatted custom error object
+          reply.status(status).send({
+            ...(response as object),
+            meta: { requestId, timestamp: new Date().toISOString() },
+          });
+          return;
+        }
+        if ("details" in resObj) {
+          details = resObj.details;
+        }
       }
 
       reply.status(status).send({
         success: false,
         error: {
           code: this.getErrorCode(status),
-          message:
-            typeof response === "string"
-              ? response
-              : (response as Record<string, unknown>)?.message ||
-                "An error occurred",
+          message: errorMessage,
+          ...(details ? { details } : {}),
         },
         meta: { requestId, timestamp: new Date().toISOString() },
       });

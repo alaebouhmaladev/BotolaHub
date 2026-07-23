@@ -33,6 +33,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@botolahub/config": "workspace:*",
+    "@types/node": "^20.12.12",
     "@types/react": "~18.2.79",
     "typescript": "^5.4.5"
   }

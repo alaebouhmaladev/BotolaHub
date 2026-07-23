@@ -23,3 +23,16 @@
 - **Context**: BotolaHub serves Moroccan football fans in Arabic (RTL), French, and English.
 - **Decision**: Build `packages/localization` and `packages/design-tokens` with first-class RTL direction utilities (`dir="rtl"`) from Day 1.
 - **Consequences**: Arabic interfaces render correctly with proper text alignment and layout direction out of the box.
+
+## ADR-005: Scalable Refresh Token Rotation, Reuse Detection & Token Security
+
+- **Context**: Refresh token authentication requires O(1) lookup speed, token rotation, reuse attack protection, and secure client storage across web and mobile.
+- **Decision**:
+  - Refresh tokens use a compound structure `${sessionId}.${secret}` enabling $O(1)$ database lookup by primary key (`sessionId`).
+  - Only the Argon2id hash of `secret` is stored in the database (`UserSession.refreshTokenHash`).
+  - Every refresh transactionally rotates the token and attaches a `familyId`.
+  - Presenting a previously revoked refresh token triggers **Reuse Detection**, revoking all active sessions in the family.
+  - JWT Auth Guard queries the database to verify the session exists, is owned by the user, and is not revoked/expired.
+  - Web client stores refresh tokens in secure HTTP-only cookies (no access token in `localStorage`).
+  - Mobile client stores refresh tokens in Expo `SecureStore`.
+- **Consequences**: Protection against token replay attacks, instant session revocation capability, and secure storage compliance across all clients.

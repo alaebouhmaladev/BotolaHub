@@ -8,7 +8,6 @@ import {
   AuthSuccessData,
   AuthSuccessDataSchema,
 } from "@botolahub/contracts";
-import { z } from "zod";
 
 export interface ApiClientConfig {
   baseUrl: string;

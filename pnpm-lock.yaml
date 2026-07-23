@@ -215,6 +215,9 @@ importers:
       '@botolahub/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.19.43
       '@types/react':
         specifier: ~18.2.79
         version: 18.2.79
