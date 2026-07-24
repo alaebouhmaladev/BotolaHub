@@ -23,13 +23,15 @@
   - `@botolahub/mobile` (Expo React Native with Expo Router, AR/FR/EN & RTL support)
 - **CI & Docs**: GitHub Actions `ci.yml`, `README.md`, `docs/architecture/overview.md`, `docs/decisions.md`.
 
-## Day 2 Status — Domain Model, Seed Data & Secure Authentication
+## Day 2 Audit & Release Status — Domain Model, Seed Data & Secure Authentication
 
-- **Outcome**: Completed Day 2 Tasks 2.1 - 2.5 & Day 1/2 Stabilization successfully.
-- **Prisma Schema & Domain Model**: Designed complete 24-model Prisma schema and generated initial migrations (`20260722000000_day2_initial_domain_model` & `20260723000000_add_session_family_and_rotation`).
+- **Audit Outcome**: PASS
+- **Audit Report**: [docs/audits/day-02-audit.md](file:///Users/alaebouhala/Documents/Dev%20Projects%20/BotolaHub/BotolaHub/docs/audits/day-02-audit.md)
+- **Verified Tests**: 14 integration tests (`@botolahub/api`), 24 total workspace unit & integration tests.
+- **Unresolved Blockers**: None (0 P0, 0 P1, 0 P2, 0 P3 findings).
+- **Prisma Schema & Domain Model**: Designed complete 24-model Prisma schema and generated initial migrations.
 - **Seed Data & Idempotency**: Built deterministic, idempotent seed script verifying 1 Competition, 1 Active Season, 16 Clubs, 240 Players, and 30 Gameweeks with assertions.
-- **Scalable API Authentication**: Built $O(1)$ compound refresh tokens (`sessionId.secret`), Argon2id secret hashing, transactional rotation, token family tracking (`familyId`), and reuse attack detection.
-- **Session Revocation & Guard Security**: Enforced database session verification inside `JwtAuthGuard` checking session existence, ownership, revocation, and expiration.
-- **Web Authentication UI**: Removed access tokens from `localStorage`. Implemented HTTP-only cookies and automatic session restoration on page reload in `AuthContext`.
-- **Mobile Authentication UI**: Stored refresh tokens in Expo `SecureStore` with token rotation and session restoration.
-- **CI Pipeline Stabilization**: Configured `.github/workflows/ci.yml` with `pnpm install --frozen-lockfile`, `master` branch tracking, `pnpm format:check`, and real Prisma migrations.
+- **Scalable API Authentication**: Built $O(1)$ compound refresh tokens (`sessionId.secret`), 256-bit CSPRNG secrets, Argon2id secret hashing, transactional rotation, token family tracking (`familyId`), and strict 6-step reuse attack detection.
+- **Web & Mobile Transport Separation**: Web endpoints set `botolahub_refresh` HTTP-only cookie (`path: "/api/v1/auth"`, `sameSite: "strict"`); mobile endpoints return refresh tokens in JSON body stored in Expo `SecureStore`.
+- **Single-Flight Web Refresh**: Implemented cached `refreshSessionOnce()` in `apps/web/src/context/AuthContext.tsx` to handle React 18 Strict Mode double-effect execution safely.
+- **Next Approved Day**: Day 3 (Fantasy Engine & Squad Builder).
