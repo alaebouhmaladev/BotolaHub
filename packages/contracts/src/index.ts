@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-// Health response contract
+// ─── Health Contract ─────────────────────────────────────────────────────────
+
 export const HealthResponseSchema = z.object({
   status: z.enum(["ok", "degraded", "error"]),
   timestamp: z.string(),
@@ -14,7 +15,8 @@ export const HealthResponseSchema = z.object({
 
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
 
-// Auth DTO contracts
+// ─── Auth Contracts ──────────────────────────────────────────────────────────
+
 export const RegisterDtoSchema = z.object({
   email: z.string().email("Invalid email address"),
   displayName: z
@@ -79,3 +81,239 @@ export const AuthSuccessDataSchema = z.object({
 });
 
 export type AuthSuccessData = z.infer<typeof AuthSuccessDataSchema>;
+
+// ─── Catalog Contracts ───────────────────────────────────────────────────────
+
+export const PositionEnum = z.enum(["GK", "DEF", "MID", "FWD"]);
+export type Position = z.infer<typeof PositionEnum>;
+
+export const PlayerStatusEnum = z.enum([
+  "AVAILABLE",
+  "INJURED",
+  "SUSPENDED",
+  "UNKNOWN",
+]);
+export type PlayerStatus = z.infer<typeof PlayerStatusEnum>;
+
+export const CompetitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  nameAr: z.string(),
+  nameFr: z.string(),
+  country: z.string(),
+});
+export type Competition = z.infer<typeof CompetitionSchema>;
+
+export const SeasonSchema = z.object({
+  id: z.string(),
+  competitionId: z.string(),
+  label: z.string(),
+  isActive: z.boolean(),
+  startDate: z.string(),
+  endDate: z.string(),
+});
+export type Season = z.infer<typeof SeasonSchema>;
+
+export const ClubSchema = z.object({
+  id: z.string(),
+  seasonId: z.string(),
+  name: z.string(),
+  nameAr: z.string(),
+  nameFr: z.string(),
+  shortName: z.string(),
+  city: z.string(),
+  crestUrl: z.string().nullable().optional(),
+});
+export type Club = z.infer<typeof ClubSchema>;
+
+export const PlayerSchema = z.object({
+  id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  firstNameAr: z.string().nullable().optional(),
+  lastNameAr: z.string().nullable().optional(),
+  position: PositionEnum,
+  nationality: z.string(),
+});
+export type Player = z.infer<typeof PlayerSchema>;
+
+export const PlayerSeasonSchema = z.object({
+  id: z.string(),
+  playerId: z.string(),
+  seasonId: z.string(),
+  clubId: z.string(),
+  status: PlayerStatusEnum,
+  pricePoints: z.number(), // stored in integer tenths (55 = 5.5)
+  player: PlayerSchema.optional(),
+  club: ClubSchema.optional(),
+});
+export type PlayerSeason = z.infer<typeof PlayerSeasonSchema>;
+
+export const GameweekStatusEnum = z.enum([
+  "SCHEDULED",
+  "ACTIVE",
+  "FINISHED",
+  "LOCKED",
+]);
+export type GameweekStatus = z.infer<typeof GameweekStatusEnum>;
+
+export const GameweekSchema = z.object({
+  id: z.string(),
+  seasonId: z.string(),
+  number: z.number(),
+  status: GameweekStatusEnum,
+  deadlineUtc: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+});
+export type Gameweek = z.infer<typeof GameweekSchema>;
+
+export const FixtureStatusEnum = z.enum([
+  "SCHEDULED",
+  "LIVE",
+  "FINISHED",
+  "POSTPONED",
+  "CANCELLED",
+]);
+export type FixtureStatus = z.infer<typeof FixtureStatusEnum>;
+
+export const FixtureSchema = z.object({
+  id: z.string(),
+  gameweekId: z.string(),
+  homeClubId: z.string(),
+  awayClubId: z.string(),
+  status: FixtureStatusEnum,
+  kickoffUtc: z.string(),
+  homeScore: z.number().nullable().optional(),
+  awayScore: z.number().nullable().optional(),
+  venue: z.string().nullable().optional(),
+  homeClub: ClubSchema.optional(),
+  awayClub: ClubSchema.optional(),
+});
+export type Fixture = z.infer<typeof FixtureSchema>;
+
+export const PlayerFilterQuerySchema = z.object({
+  search: z.string().optional(),
+  clubId: z.string().optional(),
+  position: PositionEnum.optional(),
+  minPrice: z.coerce.number().optional(), // in tenths
+  maxPrice: z.coerce.number().optional(), // in tenths
+  status: PlayerStatusEnum.optional(),
+  page: z.coerce.number().optional().default(1),
+  limit: z.coerce.number().optional().default(50),
+});
+export type PlayerFilterQuery = z.infer<typeof PlayerFilterQuerySchema>;
+
+export function createPaginatedResponseSchema<T extends z.ZodTypeAny>(
+  itemSchema: T,
+) {
+  return z.object({
+    items: z.array(itemSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
+  });
+}
+
+// ─── Fantasy Team Contracts ──────────────────────────────────────────────────
+
+export const ValidationCodeEnum = z.enum([
+  "SQUAD_SIZE_INVALID",
+  "POSITION_COUNT_INVALID",
+  "BUDGET_EXCEEDED",
+  "CLUB_LIMIT_EXCEEDED",
+  "DUPLICATE_PLAYER",
+  "LINEUP_SIZE_INVALID",
+  "FORMATION_INVALID",
+  "PLAYER_NOT_IN_SQUAD",
+  "CAPTAIN_NOT_STARTER",
+  "CAPTAIN_EQUALS_VICE_CAPTAIN",
+  "BENCH_ORDER_INVALID",
+  "DEADLINE_LOCKED",
+]);
+export type ValidationCode = z.infer<typeof ValidationCodeEnum>;
+
+export const ValidationIssueSchema = z.object({
+  code: ValidationCodeEnum,
+  message: z.string(),
+  field: z.string().optional(),
+});
+export type ValidationIssue = z.infer<typeof ValidationIssueSchema>;
+
+export const ValidationResultSchema = z.object({
+  isValid: z.boolean(),
+  issues: z.array(ValidationIssueSchema),
+});
+export type ValidationResult = z.infer<typeof ValidationResultSchema>;
+
+export const CreateFantasyTeamDtoSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Team name must be at least 2 characters")
+    .max(50, "Team name must be at most 50 characters"),
+});
+export type CreateFantasyTeamDto = z.infer<typeof CreateFantasyTeamDtoSchema>;
+
+export const UpdateSquadDtoSchema = z.object({
+  squadPlayerIds: z
+    .array(z.string())
+    .length(15, "Squad must contain exactly 15 player IDs"),
+});
+export type UpdateSquadDto = z.infer<typeof UpdateSquadDtoSchema>;
+
+export const UpdateLineupDtoSchema = z.object({
+  startingPlayerIds: z
+    .array(z.string())
+    .length(11, "Starting lineup must contain exactly 11 player IDs"),
+  benchPlayerIds: z
+    .array(z.string())
+    .length(4, "Bench must contain exactly 4 player IDs"),
+  captainId: z.string().min(1, "Captain is required"),
+  viceCaptainId: z.string().min(1, "Vice-captain is required"),
+});
+export type UpdateLineupDto = z.infer<typeof UpdateLineupDtoSchema>;
+
+export const FantasySquadMemberSchema = z.object({
+  id: z.string(),
+  fantasyTeamId: z.string(),
+  playerSeasonId: z.string(),
+  purchasePrice: z.number(),
+  playerSeason: PlayerSeasonSchema.optional(),
+});
+export type FantasySquadMember = z.infer<typeof FantasySquadMemberSchema>;
+
+export const GameweekLineupPlayerSchema = z.object({
+  id: z.string(),
+  lineupId: z.string(),
+  playerSeasonId: z.string(),
+  isStarting: z.boolean(),
+  benchOrder: z.number().nullable().optional(),
+  playerSeason: PlayerSeasonSchema.optional(),
+});
+export type GameweekLineupPlayer = z.infer<typeof GameweekLineupPlayerSchema>;
+
+export const GameweekLineupSchema = z.object({
+  id: z.string(),
+  fantasyTeamId: z.string(),
+  gameweekId: z.string(),
+  captainId: z.string().nullable().optional(),
+  viceCaptainId: z.string().nullable().optional(),
+  isFinalised: z.boolean(),
+  players: z.array(GameweekLineupPlayerSchema).optional(),
+});
+export type GameweekLineup = z.infer<typeof GameweekLineupSchema>;
+
+export const FantasyTeamSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  seasonId: z.string(),
+  name: z.string(),
+  budgetPoints: z.number(),
+  totalPoints: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  squadMembers: z.array(FantasySquadMemberSchema).optional(),
+  gameweekLineups: z.array(GameweekLineupSchema).optional(),
+});
+export type FantasyTeam = z.infer<typeof FantasyTeamSchema>;
