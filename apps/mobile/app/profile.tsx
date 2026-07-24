@@ -37,10 +37,17 @@ export default function ProfileScreen() {
         <Text style={styles.infoValue}>{user.role}</Text>
 
         <TouchableOpacity
+          style={styles.squadBtn}
+          onPress={() => router.push("/squad")}
+        >
+          <Text style={styles.squadBtnText}>Manage Squad</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.logoutBtn}
           onPress={async () => {
             await logout();
-            router.replace("/index");
+            router.replace("/");
           }}
         >
           <Text style={styles.logoutText}>Log Out</Text>
@@ -73,12 +80,20 @@ const styles = StyleSheet.create({
   },
   infoLabel: { color: "#94A3B8", fontSize: 12, marginTop: 10 },
   infoValue: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
+  squadBtn: {
+    backgroundColor: "#0F5132",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  squadBtnText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
   logoutBtn: {
     backgroundColor: "#EF4444",
     borderRadius: 8,
     padding: 14,
     alignItems: "center",
-    marginTop: 24,
+    marginTop: 12,
   },
   logoutText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
 });
