@@ -254,6 +254,27 @@ describe("Pure Fantasy Engine Rules", () => {
       expect(deriveFormation(starters, map)).toBe("4-4-2");
     });
 
+    it("validates 4-3-3 formation", () => {
+      const map = createMockPlayerMap();
+      const squadIds = Array.from(map.keys());
+      const starters = [
+        "gk-1",
+        "def-1",
+        "def-2",
+        "def-3",
+        "def-4",
+        "mid-1",
+        "mid-2",
+        "mid-3",
+        "fwd-1",
+        "fwd-2",
+        "fwd-3",
+      ];
+      const res = validateStartingLineup(starters, squadIds, map);
+      expect(res.isValid).toBe(true);
+      expect(deriveFormation(starters, map)).toBe("4-3-3");
+    });
+
     it("validates 3-5-2 formation", () => {
       const map = createMockPlayerMap();
       const squadIds = Array.from(map.keys());
@@ -273,6 +294,27 @@ describe("Pure Fantasy Engine Rules", () => {
       const res = validateStartingLineup(starters, squadIds, map);
       expect(res.isValid).toBe(true);
       expect(deriveFormation(starters, map)).toBe("3-5-2");
+    });
+
+    it("validates legal 2-midfielder formation (5-2-3)", () => {
+      const map = createMockPlayerMap();
+      const squadIds = Array.from(map.keys());
+      const starters = [
+        "gk-1",
+        "def-1",
+        "def-2",
+        "def-3",
+        "def-4",
+        "def-5",
+        "mid-1",
+        "mid-2",
+        "fwd-1",
+        "fwd-2",
+        "fwd-3",
+      ];
+      const res = validateStartingLineup(starters, squadIds, map);
+      expect(res.isValid).toBe(true);
+      expect(deriveFormation(starters, map)).toBe("5-2-3");
     });
 
     it("fails invalid formation with 2 defenders", () => {
