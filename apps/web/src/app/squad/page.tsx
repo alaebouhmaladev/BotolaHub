@@ -20,7 +20,7 @@ import {
   PlayerData,
 } from "@botolahub/fantasy-engine";
 
-export default function SquadBuilderPage() {
+export default function SquadBuilderPage(): JSX.Element | null {
   const { user, token, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -55,7 +55,7 @@ export default function SquadBuilderPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      router.replace("/login");
     }
   }, [authLoading, user, router]);
 
@@ -153,6 +153,49 @@ export default function SquadBuilderPage() {
     }
   };
 
+  // Auto-assign starting lineup, bench, captain, and vice-captain to enforce valid formation
+  const autoAssignLineup = (squad: PlayerSeason[]) => {
+    const gks = squad.filter((p) => p.player?.position === "GK");
+    const defs = squad.filter((p) => p.player?.position === "DEF");
+    const mids = squad.filter((p) => p.player?.position === "MID");
+    const fwds = squad.filter((p) => p.player?.position === "FWD");
+
+    const starters: string[] = [];
+    const bench: string[] = [];
+
+    // Ensure 1 GK starting, remaining GKs on bench
+    if (gks[0]) starters.push(gks[0].id);
+    for (let i = 1; i < gks.length; i++) bench.push(gks[i].id);
+
+    // Minimum legal formation requirement (authoritative engine): 3 DEF, 2 MID, 1 FWD
+    defs.forEach((p, i) => (i < 3 ? starters.push(p.id) : bench.push(p.id)));
+    mids.forEach((p, i) => (i < 2 ? starters.push(p.id) : bench.push(p.id)));
+    fwds.forEach((p, i) => (i < 1 ? starters.push(p.id) : bench.push(p.id)));
+
+    // Fill remaining starter slots up to 11 with available bench outfielders
+    while (starters.length < 11 && bench.length > 0) {
+      const idx = bench.findIndex((id) => {
+        const p = squad.find((sp) => sp.id === id);
+        return p?.player?.position !== "GK";
+      });
+      if (idx !== -1) {
+        starters.push(bench[idx]);
+        bench.splice(idx, 1);
+      } else {
+        break;
+      }
+    }
+
+    setStartingIds(starters);
+    setBenchIds(bench);
+
+    // Set Captain and Vice-Captain from starting 11
+    const capt = starters[0] || null;
+    const vice = starters.find((id) => id !== capt) || null;
+    setCaptainId(capt);
+    setViceCaptainId(vice);
+  };
+
   // Add/Replace player in squad
   const selectPlayerForSquad = (player: PlayerSeason) => {
     if (selectedSquad.some((p) => p.id === player.id)) {
@@ -173,27 +216,14 @@ export default function SquadBuilderPage() {
 
     const updated = [...selectedSquad, player];
     setSelectedSquad(updated);
-
-    // Auto-assign to starters if starters < 11
-    if (startingIds.length < 11) {
-      setStartingIds([...startingIds, player.id]);
-    } else {
-      setBenchIds([...benchIds, player.id]);
-    }
-
-    // Auto-assign captain if none
-    if (!captainId) setCaptainId(player.id);
-    else if (!viceCaptainId && player.id !== captainId)
-      setViceCaptainId(player.id);
+    autoAssignLineup(updated);
   };
 
   // Remove player from squad
   const removePlayerFromSquad = (playerId: string) => {
-    setSelectedSquad(selectedSquad.filter((p) => p.id !== playerId));
-    setStartingIds(startingIds.filter((id) => id !== playerId));
-    setBenchIds(benchIds.filter((id) => id !== playerId));
-    if (captainId === playerId) setCaptainId(null);
-    if (viceCaptainId === playerId) setViceCaptainId(null);
+    const updated = selectedSquad.filter((p) => p.id !== playerId);
+    setSelectedSquad(updated);
+    autoAssignLineup(updated);
   };
 
   // Save Complete Squad & Lineup
@@ -311,7 +341,22 @@ export default function SquadBuilderPage() {
     });
   }, [availablePlayers, filterPos, filterClub, filterSearch]);
 
-  if (authLoading || loading) {
+  if (authLoading) {
+    return (
+      <div
+        className="container"
+        style={{ padding: "60px", textAlign: "center" }}
+      >
+        <h2>Loading BotolaHub Squad Manager...</h2>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <div
         className="container"
@@ -878,6 +923,7 @@ function PlayerCard({
       }}
     >
       <button
+        aria-label="Remove player"
         onClick={onRemove}
         style={{
           position: "absolute",

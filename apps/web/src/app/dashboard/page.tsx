@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 
-export default function DashboardPage() {
+export default function DashboardPage(): JSX.Element | null {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      router.replace("/login");
     }
   }, [loading, user, router]);
 

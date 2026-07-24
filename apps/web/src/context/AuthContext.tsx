@@ -21,7 +21,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api/v1`
+    : "http://localhost:3001/api/v1");
 
 // Stable API client instance created once outside component render tree
 export const webClient = new BotolaHubApiClient({ baseUrl: API_URL });
@@ -38,7 +41,12 @@ export function refreshSessionOnce() {
   return refreshPromise;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  children: any;
+}): JSX.Element | null {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,14 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshSessionOnce()
       .then((res) => {
         if (!cancelled && activeRestorationRef.current) {
+          webClient.setAccessToken(res.accessToken);
           setToken(res.accessToken);
           setUser(res.user);
         }
       })
       .catch(() => {
         if (!cancelled && activeRestorationRef.current) {
-          setToken(null);
+          webClient.setAccessToken(null);
           setUser(null);
+          setToken(null);
         }
       })
       .finally(() => {

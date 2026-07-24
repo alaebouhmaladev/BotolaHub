@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth, webClient } from "../../context/AuthContext";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function LoginPage(): JSX.Element {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

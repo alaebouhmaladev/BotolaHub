@@ -42,10 +42,20 @@ const PaginatedPlayersSchema =
 export class BotolaHubApiClient {
   private baseUrl: string;
   private customFetch: typeof fetch;
+  private accessToken: string | null = null;
 
   constructor(config: ApiClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.customFetch = config.fetch || globalThis.fetch;
+    const fn = config.fetch || globalThis.fetch;
+    this.customFetch = typeof fn === "function" ? fn.bind(globalThis) : fn;
+  }
+
+  setAccessToken(token: string | null) {
+    this.accessToken = token;
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken;
   }
 
   async getHealth(): Promise<HealthResponse> {
@@ -84,28 +94,31 @@ export class BotolaHubApiClient {
     if (!res.ok) {
       throw new Error(body.error?.message || "Login failed");
     }
-    return WebAuthSuccessDataSchema.parse(body.data);
+    const data = WebAuthSuccessDataSchema.parse(body.data);
+    this.setAccessToken(data.accessToken);
+    return data;
   }
 
   async refresh(): Promise<WebAuthSuccessData> {
     const res = await this.customFetch(`${this.baseUrl}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
     const body = await res.json();
     if (!res.ok) {
       throw new Error(body.error?.message || "Token refresh failed");
     }
-    return WebAuthSuccessDataSchema.parse(body.data);
+    const data = WebAuthSuccessDataSchema.parse(body.data);
+    this.setAccessToken(data.accessToken);
+    return data;
   }
 
   async logout(): Promise<void> {
     await this.customFetch(`${this.baseUrl}/auth/logout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
+    this.setAccessToken(null);
   }
 
   // ─── Mobile Authentication Methods ───────────────────────────────────────

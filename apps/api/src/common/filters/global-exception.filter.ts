@@ -102,9 +102,33 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    // Fastify native error handling (e.g. FST_ERR_CTP_EMPTY_JSON_BODY)
+    if (
+      typeof exception === "object" &&
+      exception !== null &&
+      "statusCode" in exception &&
+      typeof (exception as { statusCode: number }).statusCode === "number"
+    ) {
+      const fastifyErr = exception as {
+        statusCode: number;
+        message: string;
+        code?: string;
+      };
+      sendStatus(fastifyErr.statusCode, {
+        success: false,
+        error: {
+          code: fastifyErr.code || this.getErrorCode(fastifyErr.statusCode),
+          message: fastifyErr.message,
+        },
+        meta: { requestId, timestamp: new Date().toISOString() },
+      });
+      return;
+    }
+
     // Fallback 500 error handler
     const fallbackMessage =
       exception instanceof Error ? exception.message : "Internal server error";
+    console.error("UNHANDLED EXCEPTION IN API 500 FALLBACK:", exception);
     sendStatus(500, {
       success: false,
       error: {

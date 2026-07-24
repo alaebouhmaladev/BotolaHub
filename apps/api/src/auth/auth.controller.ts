@@ -25,8 +25,8 @@ const REFRESH_COOKIE = "botolahub_refresh";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: IS_PROD,
-  sameSite: "strict" as const,
-  path: "/api/v1/auth",
+  sameSite: IS_PROD ? ("strict" as const) : ("lax" as const),
+  path: "/",
   maxAge: 30 * 24 * 60 * 60,
 };
 

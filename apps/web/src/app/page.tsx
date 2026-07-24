@@ -7,7 +7,7 @@ import {
 } from "@botolahub/localization";
 import { useEffect, useState } from "react";
 
-export default function HomePage() {
+export default function HomePage(): JSX.Element {
   const [lang, setLang] = useState<SupportedLanguage>("en");
   const [apiHealth, setApiHealth] = useState<string>("Checking...");
 

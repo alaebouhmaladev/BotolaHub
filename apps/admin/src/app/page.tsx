@@ -1,6 +1,6 @@
 import { getTranslation } from "@botolahub/localization";
 
-export default function AdminPage() {
+export default function AdminPage(): JSX.Element {
   const t = getTranslation("en");
 
   return (

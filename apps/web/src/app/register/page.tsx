@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { webClient } from "../../context/AuthContext";
 import Link from "next/link";
 
-export default function RegisterPage() {
+export default function RegisterPage(): JSX.Element {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");

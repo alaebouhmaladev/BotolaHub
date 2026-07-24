@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@botolahub/api-client": "workspace:*",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@botolahub/config": "workspace:*",
+    "@playwright/test": "^1.41.2",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
