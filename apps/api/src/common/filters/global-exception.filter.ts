@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { randomUUID } from "crypto";
+import { ZodError } from "zod";
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -26,6 +27,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         reply.send(payload);
       }
     };
+
+    // Zod validation exception handling
+    if (
+      exception instanceof ZodError ||
+      (typeof exception === "object" &&
+        exception !== null &&
+        (exception as { name?: string }).name === "ZodError")
+    ) {
+      const zodErr = exception as ZodError;
+      const message =
+        zodErr.errors.map((e) => e.message).join("; ") || "Validation failed";
+      sendStatus(400, {
+        success: false,
+        error: {
+          code: "BAD_REQUEST",
+          message,
+          details: zodErr.errors,
+        },
+        meta: { requestId, timestamp: new Date().toISOString() },
+      });
+      return;
+    }
 
     const isHttpExp =
       exception instanceof HttpException ||
@@ -79,7 +102,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    throw exception;
+    // Fallback 500 error handler
+    const fallbackMessage =
+      exception instanceof Error ? exception.message : "Internal server error";
+    sendStatus(500, {
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: fallbackMessage,
+      },
+      meta: { requestId, timestamp: new Date().toISOString() },
+    });
   }
 
   private getErrorCode(status: number): string {
