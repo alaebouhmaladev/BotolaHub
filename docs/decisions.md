@@ -36,3 +36,13 @@
   - Web client stores refresh tokens in secure HTTP-only cookies (no access token in `localStorage`).
   - Mobile client stores refresh tokens in Expo `SecureStore`.
 - **Consequences**: Protection against token replay attacks, instant session revocation capability, and secure storage compliance across all clients.
+
+## ADR-006: Server-Side Authoritative Price Recalculation & Atomic Squad Transactions
+
+- **Context**: Squad budget validation must prevent client-side price tampering and race conditions during squad updates.
+- **Decision**:
+  - Client-submitted prices and club IDs are ignored by backend API services.
+  - The API re-reads current authoritative player prices and positions from PostgreSQL within a Prisma `$transaction`.
+  - Pure validation functions (`validateSquad`, `validateStartingLineup`, `validateBench`, `validateCaptaincy`) evaluate the squad rules inside the transaction.
+  - Squad members and starting lineups are updated atomically.
+- **Consequences**: Zero possibility of client price manipulation, race conditions, or partial squad state saves.
