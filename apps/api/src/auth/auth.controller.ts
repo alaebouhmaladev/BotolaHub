@@ -14,15 +14,21 @@ import {
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "./auth.service.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
-import { RegisterDto, LoginDto } from "./dto/auth.dto.js";
+import { RegisterDto, LoginDto, RefreshTokenDto } from "./dto/auth.dto.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 const REFRESH_COOKIE = "botolahub_refresh";
-const SESSION_COOKIE = "botolahub_session";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: IS_PROD,
+  sameSite: "strict" as const,
+  path: "/api/v1/auth",
+  maxAge: 30 * 24 * 60 * 60,
+};
 
 function safeCookie(
   res: FastifyReply,
@@ -54,10 +60,9 @@ function safeClearCookie(res: FastifyReply, name: string, opts: object) {
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(
-    @Inject(AuthService) private readonly auth: AuthService,
-    @Inject(JwtService) private readonly jwt: JwtService,
-  ) {}
+  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+
+  // ─── Shared Registration ───────────────────────────────────────────────────
 
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
@@ -71,11 +76,13 @@ export class AuthController {
     };
   }
 
+  // ─── Web Authentication Flow (HTTP-Only Cookie) ───────────────────────────
+
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Login with email and password" })
+  @ApiOperation({ summary: "Web Login with email and password" })
   @UsePipes(new ZodValidationPipe(LoginDto))
-  async login(
+  async webLogin(
     @Body() dto: import("./dto/auth.dto.js").LoginDtoType,
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
@@ -86,27 +93,14 @@ export class AuthController {
       req.ip,
     );
 
-    // Set refresh token in HTTP-only cookie for web clients
-    safeCookie(res, REFRESH_COOKIE, result.refreshToken, {
-      httpOnly: true,
-      secure: IS_PROD,
-      sameSite: "strict",
-      path: "/api/v1/auth",
-      maxAge: 30 * 24 * 60 * 60,
-    });
+    // Set refresh token in HTTP-only cookie ONLY for web clients
+    safeCookie(res, REFRESH_COOKIE, result.refreshToken, COOKIE_OPTIONS);
 
-    safeCookie(res, SESSION_COOKIE, result.sessionId, {
-      httpOnly: true,
-      secure: IS_PROD,
-      sameSite: "strict",
-      path: "/api/v1/auth/logout",
-    });
-
+    // NEVER return refreshToken in JSON body for web
     return {
       success: true,
       data: {
         accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
         user: result.user,
       },
     };
@@ -114,16 +108,13 @@ export class AuthController {
 
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Refresh access token using refresh token cookie or body",
-  })
-  async refresh(
+  @ApiOperation({ summary: "Web Refresh access token using HTTP-only cookie" })
+  async webRefresh(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
   ) {
     const cookies = req.cookies as Record<string, string> | undefined;
-    const body = req.body as Record<string, string> | undefined;
-    const rawToken = cookies?.[REFRESH_COOKIE] || body?.refreshToken;
+    const rawToken = cookies?.[REFRESH_COOKIE];
 
     if (!rawToken) {
       throw new UnauthorizedException("No refresh token provided");
@@ -131,13 +122,80 @@ export class AuthController {
 
     const result = await this.auth.refresh(rawToken);
 
-    safeCookie(res, REFRESH_COOKIE, result.refreshToken, {
+    // Rotate HTTP-only cookie
+    safeCookie(res, REFRESH_COOKIE, result.refreshToken, COOKIE_OPTIONS);
+
+    // NEVER return refreshToken in JSON body for web
+    return {
+      success: true,
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+    };
+  }
+
+  @Post("logout")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Web Logout and revoke HTTP-only cookie session" })
+  async webLogout(
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ) {
+    const cookies = req.cookies as Record<string, string> | undefined;
+    const rawToken = cookies?.[REFRESH_COOKIE];
+
+    if (rawToken) {
+      // Parse sessionId.secret, verify Argon2id hash, and revoke session
+      await this.auth.revokeSession(rawToken).catch(() => null);
+    }
+
+    // Clear cookie using exact matching settings
+    safeClearCookie(res, REFRESH_COOKIE, {
+      path: "/api/v1/auth",
       httpOnly: true,
       secure: IS_PROD,
       sameSite: "strict",
-      path: "/api/v1/auth",
-      maxAge: 30 * 24 * 60 * 60,
     });
+
+    return { success: true, data: { message: "Logged out successfully" } };
+  }
+
+  // ─── Mobile Authentication Flow (Expo SecureStore Transport) ─────────────
+
+  @Post("mobile/login")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Mobile Login with email and password" })
+  @UsePipes(new ZodValidationPipe(LoginDto))
+  async mobileLogin(
+    @Body() dto: import("./dto/auth.dto.js").LoginDtoType,
+    @Req() req: FastifyRequest,
+  ) {
+    const result = await this.auth.login(
+      dto,
+      req.headers["user-agent"],
+      req.ip,
+    );
+
+    // Explicit mobile flow: returns refreshToken in JSON body for Expo SecureStore
+    return {
+      success: true,
+      data: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user,
+      },
+    };
+  }
+
+  @Post("mobile/refresh")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Mobile Refresh access token using response body" })
+  @UsePipes(new ZodValidationPipe(RefreshTokenDto))
+  async mobileRefresh(
+    @Body() dto: import("./dto/auth.dto.js").RefreshTokenDtoType,
+  ) {
+    const result = await this.auth.refresh(dto.refreshToken);
 
     return {
       success: true,
@@ -149,46 +207,20 @@ export class AuthController {
     };
   }
 
-  @Post("logout")
+  @Post("mobile/logout")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Logout and revoke session" })
-  async logout(
-    @Req() req: FastifyRequest,
-    @Res({ passthrough: true }) res: FastifyReply,
+  @ApiOperation({ summary: "Mobile Logout and revoke refresh token" })
+  @UsePipes(new ZodValidationPipe(RefreshTokenDto))
+  async mobileLogout(
+    @Body() dto: import("./dto/auth.dto.js").RefreshTokenDtoType,
   ) {
-    const cookies = req.cookies as Record<string, string> | undefined;
-    const body = req.body as Record<string, string> | undefined;
-
-    let sessionId = cookies?.[SESSION_COOKIE] || body?.sessionId;
-
-    if (!sessionId && body?.refreshToken && body.refreshToken.includes(".")) {
-      sessionId = body.refreshToken.split(".")[0];
-    }
-
-    if (!sessionId) {
-      const authHeader = req.headers["authorization"];
-      if (authHeader?.startsWith("Bearer ")) {
-        try {
-          const token = authHeader.slice(7);
-          const payload = this.jwt.decode<{ sessionId?: string }>(token);
-          if (payload?.sessionId) {
-            sessionId = payload.sessionId;
-          }
-        } catch {
-          // ignore decode error
-        }
-      }
-    }
-
-    if (sessionId) {
-      await this.auth.logout(sessionId);
-    }
-
-    safeClearCookie(res, REFRESH_COOKIE, { path: "/api/v1/auth" });
-    safeClearCookie(res, SESSION_COOKIE, { path: "/api/v1/auth/logout" });
+    // Validates format, looks up sessionId, verifies secret hash, revokes session
+    await this.auth.revokeSession(dto.refreshToken);
 
     return { success: true, data: { message: "Logged out successfully" } };
   }
+
+  // ─── Authenticated User Profile ──────────────────────────────────────────
 
   @Get("me")
   @UseGuards(JwtAuthGuard)

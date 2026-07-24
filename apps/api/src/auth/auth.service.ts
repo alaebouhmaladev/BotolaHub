@@ -6,12 +6,16 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as argon2 from "argon2";
-import { v4 as uuidv4 } from "uuid";
+import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { RegisterDtoType, LoginDtoType } from "./dto/auth.dto.js";
 
 const ACCESS_TOKEN_TTL = 15 * 60; // 15 minutes in seconds
 const REFRESH_TOKEN_TTL_DAYS = 30;
+
+function generateSecret(): string {
+  return randomBytes(32).toString("base64url");
+}
 
 @Injectable()
 export class AuthService {
@@ -95,7 +99,13 @@ export class AuthService {
       throw new UnauthorizedException("Invalid refresh token");
     }
 
-    // Reuse detection: if a revoked token is presented, revoke all active sessions in the family
+    // Step 3 & 4: Verify secret BEFORE checking revocation or revoking families
+    const validSecret = await argon2.verify(session.refreshTokenHash, secret);
+    if (!validSecret) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    // Step 5: Confirmed Token Reuse Detection (valid secret + already revoked session)
     if (session.isRevoked) {
       await this.prisma.client.userSession.updateMany({
         where: { familyId: session.familyId, isRevoked: false },
@@ -106,17 +116,13 @@ export class AuthService {
       );
     }
 
+    // Step 6: Expiration Check
     if (session.expiresAt < new Date()) {
       throw new UnauthorizedException("Refresh token expired");
     }
 
-    const validSecret = await argon2.verify(session.refreshTokenHash, secret);
-    if (!validSecret) {
-      throw new UnauthorizedException("Invalid refresh token");
-    }
-
-    // Rotate transactionally with concurrency protection
-    const newSecret = uuidv4() + uuidv4();
+    // Step 7: Rotate transactionally with concurrency protection
+    const newSecret = generateSecret();
     const newSecretHash = await argon2.hash(newSecret, {
       type: argon2.argon2id,
     });
@@ -177,11 +183,43 @@ export class AuthService {
     };
   }
 
-  async logout(sessionId: string) {
-    await this.prisma.client.userSession.updateMany({
+  async revokeSession(rawToken: string, expectedUserId?: string) {
+    const dotIndex = rawToken.indexOf(".");
+    if (dotIndex === -1) {
+      throw new UnauthorizedException("Invalid refresh token format");
+    }
+
+    const sessionId = rawToken.slice(0, dotIndex);
+    const secret = rawToken.slice(dotIndex + 1);
+
+    if (!sessionId || !secret) {
+      throw new UnauthorizedException("Invalid refresh token format");
+    }
+
+    const session = await this.prisma.client.userSession.findUnique({
       where: { id: sessionId },
+    });
+
+    if (!session || session.isRevoked) {
+      // Safe and idempotent: if session doesn't exist or is already revoked, return success
+      return { success: true };
+    }
+
+    if (expectedUserId && session.userId !== expectedUserId) {
+      throw new UnauthorizedException("Invalid session context");
+    }
+
+    const validSecret = await argon2.verify(session.refreshTokenHash, secret);
+    if (!validSecret) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    await this.prisma.client.userSession.update({
+      where: { id: session.id },
       data: { isRevoked: true },
     });
+
+    return { success: true };
   }
 
   async getCurrentUser(userId: string) {
@@ -205,7 +243,7 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ) {
-    const secret = uuidv4() + uuidv4();
+    const secret = generateSecret();
     const refreshTokenHash = await argon2.hash(secret, {
       type: argon2.argon2id,
     });

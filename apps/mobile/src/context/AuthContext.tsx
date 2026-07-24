@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const savedRefreshToken = await getSecureItem(REFRESH_TOKEN_KEY);
         if (savedRefreshToken) {
-          const res = await client.refresh(savedRefreshToken);
+          const res = await client.mobileRefresh(savedRefreshToken);
           if (res.refreshToken) {
             await saveSecureItem(REFRESH_TOKEN_KEY, res.refreshToken);
           }
@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       const savedRefreshToken = await getSecureItem(REFRESH_TOKEN_KEY);
-      await client.logout(savedRefreshToken ?? undefined);
+      if (savedRefreshToken) {
+        await client.mobileLogout(savedRefreshToken);
+      }
     } catch {
       // network failure fallback
     }

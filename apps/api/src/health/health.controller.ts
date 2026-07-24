@@ -43,12 +43,15 @@ export class HealthController {
 
     return {
       status:
-        dbStatus === "connected" && redisStatus === "connected" ? "ok" : "ok", // baseline return 'ok' for API shell readiness
+        dbStatus === "connected" && redisStatus === "connected"
+          ? "ok"
+          : "degraded",
       timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
       version: "0.1.0",
       services: {
-        database: dbStatus,
-        redis: redisStatus,
+        database: dbStatus === "connected" ? "up" : "down",
+        redis: redisStatus === "connected" ? "up" : "down",
       },
     };
   }

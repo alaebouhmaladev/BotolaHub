@@ -3,7 +3,6 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
-  HttpStatus,
 } from "@nestjs/common";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { randomUUID } from "crypto";
@@ -18,9 +17,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const requestId =
       (request.headers["x-request-id"] as string) || randomUUID();
 
-    if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-      const response = exception.getResponse();
+    const sendStatus = (code: number, payload: object) => {
+      if (typeof reply.code === "function") {
+        reply.code(code).send(payload);
+      } else if (typeof reply.status === "function") {
+        reply.status(code).send(payload);
+      } else {
+        reply.send(payload);
+      }
+    };
+
+    const isHttpExp =
+      exception instanceof HttpException ||
+      (typeof exception === "object" &&
+        exception !== null &&
+        typeof (exception as Record<string, unknown>).getStatus === "function");
+
+    if (isHttpExp) {
+      const httpExp = exception as HttpException;
+      const status = httpExp.getStatus();
+      const response = httpExp.getResponse();
 
       let errorMessage = "An error occurred";
       let details: unknown = undefined;
@@ -40,7 +56,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           resObj.error !== null
         ) {
           // Already formatted custom error object
-          reply.status(status).send({
+          sendStatus(status, {
             ...(response as object),
             meta: { requestId, timestamp: new Date().toISOString() },
           });
@@ -51,7 +67,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
       }
 
-      reply.status(status).send({
+      sendStatus(status, {
         success: false,
         error: {
           code: this.getErrorCode(status),
@@ -63,14 +79,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    reply.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
-      success: false,
-      error: {
-        code: "INTERNAL_ERROR",
-        message: "An unexpected error occurred",
-      },
-      meta: { requestId, timestamp: new Date().toISOString() },
-    });
+    throw exception;
   }
 
   private getErrorCode(status: number): string {

@@ -6,10 +6,11 @@ describe("contracts", () => {
     const validPayload = {
       status: "ok",
       timestamp: new Date().toISOString(),
+      uptimeSeconds: 120,
       version: "0.1.0",
       services: {
-        database: "connected",
-        redis: "connected",
+        database: "up",
+        redis: "up",
       },
     };
 

@@ -5,8 +5,10 @@ import {
   LoginDtoType,
   User,
   UserSchema,
-  AuthSuccessData,
-  AuthSuccessDataSchema,
+  WebAuthSuccessData,
+  WebAuthSuccessDataSchema,
+  MobileAuthSuccessData,
+  MobileAuthSuccessDataSchema,
 } from "@botolahub/contracts";
 
 export interface ApiClientConfig {
@@ -46,7 +48,9 @@ export class BotolaHubApiClient {
     return { user: validatedUser };
   }
 
-  async login(dto: LoginDtoType): Promise<AuthSuccessData> {
+  // ─── Web Authentication Methods ──────────────────────────────────────────
+
+  async login(dto: LoginDtoType): Promise<WebAuthSuccessData> {
     const res = await this.customFetch(`${this.baseUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,22 +61,67 @@ export class BotolaHubApiClient {
     if (!res.ok) {
       throw new Error(body.error?.message || "Login failed");
     }
-    return AuthSuccessDataSchema.parse(body.data);
+    return WebAuthSuccessDataSchema.parse(body.data);
   }
 
-  async refresh(refreshToken?: string): Promise<AuthSuccessData> {
+  async refresh(): Promise<WebAuthSuccessData> {
     const res = await this.customFetch(`${this.baseUrl}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
       credentials: "include",
     });
     const body = await res.json();
     if (!res.ok) {
       throw new Error(body.error?.message || "Token refresh failed");
     }
-    return AuthSuccessDataSchema.parse(body.data);
+    return WebAuthSuccessDataSchema.parse(body.data);
   }
+
+  async logout(): Promise<void> {
+    await this.customFetch(`${this.baseUrl}/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+  }
+
+  // ─── Mobile Authentication Methods ───────────────────────────────────────
+
+  async mobileLogin(dto: LoginDtoType): Promise<MobileAuthSuccessData> {
+    const res = await this.customFetch(`${this.baseUrl}/auth/mobile/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dto),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(body.error?.message || "Mobile login failed");
+    }
+    return MobileAuthSuccessDataSchema.parse(body.data);
+  }
+
+  async mobileRefresh(refreshToken: string): Promise<MobileAuthSuccessData> {
+    const res = await this.customFetch(`${this.baseUrl}/auth/mobile/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(body.error?.message || "Mobile token refresh failed");
+    }
+    return MobileAuthSuccessDataSchema.parse(body.data);
+  }
+
+  async mobileLogout(refreshToken: string): Promise<void> {
+    await this.customFetch(`${this.baseUrl}/auth/mobile/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+  }
+
+  // ─── Authenticated User Profile ──────────────────────────────────────────
 
   async getCurrentUser(token: string): Promise<{ user: User }> {
     const res = await this.customFetch(`${this.baseUrl}/auth/me`, {
@@ -88,14 +137,5 @@ export class BotolaHubApiClient {
     }
     const validatedUser = UserSchema.parse(body.data.user);
     return { user: validatedUser };
-  }
-
-  async logout(refreshToken?: string): Promise<void> {
-    await this.customFetch(`${this.baseUrl}/auth/logout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
-      credentials: "include",
-    });
   }
 }

@@ -1,11 +1,14 @@
 import dotenv from "dotenv";
+import path from "path";
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const defaultDbUrl =
   process.env.DATABASE_URL ||
-  "postgresql://botolahub:botolahub_secret@localhost:5435/botolahub_db?schema=public";
+  "postgresql://botolahub:botolahub_secret@127.0.0.1:5435/botolahub_db?schema=public";
 
 export const prisma = new PrismaClient({
   datasources: {

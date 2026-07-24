@@ -1,9 +1,23 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
-import { prisma } from "@botolahub/database";
+import { PrismaClient } from "@botolahub/database";
+
+const defaultDbUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://botolahub:botolahub_secret@127.0.0.1:5435/botolahub_db?schema=public";
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  readonly client = prisma;
+  readonly client: PrismaClient;
+
+  constructor() {
+    this.client = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL || defaultDbUrl,
+        },
+      },
+    });
+  }
 
   async onModuleInit() {
     try {
@@ -12,9 +26,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       if (process.env.NODE_ENV === "production") {
         throw error;
       }
-      console.warn(
-        "⚠️ Could not connect to PostgreSQL database on startup. Ensure Docker container is running.",
-      );
+      console.warn("⚠️ Database connection warning on startup:", error);
     }
   }
 

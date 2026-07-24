@@ -26,8 +26,8 @@ export default function LoginScreen() {
     setError("");
     setLoading(true);
     try {
-      const res = await client.login({ email, password });
-      await login(res.accessToken, res.refreshToken || "", res.user);
+      const res = await client.mobileLogin({ email, password });
+      await login(res.accessToken, res.refreshToken, res.user);
       router.replace("/profile");
     } catch (err: unknown) {
       setError((err as Error).message || "Login failed");

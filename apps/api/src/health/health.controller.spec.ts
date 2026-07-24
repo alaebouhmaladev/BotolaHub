@@ -20,7 +20,7 @@ describe("HealthController", () => {
     const result = await controller.checkHealth();
 
     expect(result.status).toBe("ok");
-    expect(result.services.database).toBe("connected");
-    expect(result.services.redis).toBe("connected");
+    expect(result.services.database).toBe("up");
+    expect(result.services.redis).toBe("up");
   });
 });

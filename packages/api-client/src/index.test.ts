@@ -6,10 +6,11 @@ describe("api-client", () => {
     const mockHealth = {
       status: "ok",
       timestamp: new Date().toISOString(),
+      uptimeSeconds: 120,
       version: "0.1.0",
       services: {
-        database: "connected",
-        redis: "connected",
+        database: "up",
+        redis: "up",
       },
     };
 
@@ -25,7 +26,7 @@ describe("api-client", () => {
 
     const health = await client.getHealth();
     expect(health.status).toBe("ok");
-    expect(health.services.database).toBe("connected");
+    expect(health.services.database).toBe("up");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://localhost:3001/api/v1/health",
     );
