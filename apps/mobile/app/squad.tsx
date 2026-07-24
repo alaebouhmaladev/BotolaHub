@@ -12,11 +12,7 @@ import {
 import { Stack } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { BotolaHubApiClient } from "@botolahub/api-client";
-import {
-  FantasyTeam,
-  PlayerSeason,
-  Position,
-} from "@botolahub/contracts";
+import { FantasyTeam, PlayerSeason, Position } from "@botolahub/contracts";
 import {
   validateSquad,
   INITIAL_BUDGET_TENTHS,
@@ -28,7 +24,10 @@ const API_URL =
 
 export default function MobileSquadScreen() {
   const { user, token, loading: authLoading } = useAuth();
-  const client = useMemo(() => new BotolaHubApiClient({ baseUrl: API_URL }), []);
+  const client = useMemo(
+    () => new BotolaHubApiClient({ baseUrl: API_URL }),
+    [],
+  );
 
   const [team, setTeam] = useState<FantasyTeam | null>(null);
   const [teamName, setTeamName] = useState("");
@@ -85,7 +84,8 @@ export default function MobileSquadScreen() {
           }
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to load squad data";
+        const msg =
+          err instanceof Error ? err.message : "Failed to load squad data";
         Alert.alert("Error", msg);
       } finally {
         setLoading(false);
@@ -136,7 +136,8 @@ export default function MobileSquadScreen() {
       setBenchIds([...benchIds, player.id]);
     }
     if (!captainId) setCaptainId(player.id);
-    else if (!viceCaptainId && player.id !== captainId) setViceCaptainId(player.id);
+    else if (!viceCaptainId && player.id !== captainId)
+      setViceCaptainId(player.id);
   };
 
   const removePlayer = (playerId: string) => {
@@ -164,12 +165,18 @@ export default function MobileSquadScreen() {
       });
 
       const squadVal = validateSquad(
-        selectedSquad.map((p) => ({ playerSeasonId: p.id, pricePoints: p.pricePoints })),
+        selectedSquad.map((p) => ({
+          playerSeasonId: p.id,
+          pricePoints: p.pricePoints,
+        })),
         playerMap,
       );
 
       if (!squadVal.isValid) {
-        Alert.alert("Validation Error", squadVal.issues[0]?.message || "Invalid squad");
+        Alert.alert(
+          "Validation Error",
+          squadVal.issues[0]?.message || "Invalid squad",
+        );
         setSaving(false);
         return;
       }
@@ -200,7 +207,8 @@ export default function MobileSquadScreen() {
     return availablePlayers.filter((p) => {
       if (filterPos !== "ALL" && p.player?.position !== filterPos) return false;
       if (filterSearch) {
-        const name = `${p.player?.firstName} ${p.player?.lastName}`.toLowerCase();
+        const name =
+          `${p.player?.firstName} ${p.player?.lastName}`.toLowerCase();
         if (!name.includes(filterSearch.toLowerCase())) return false;
       }
       return true;
@@ -229,8 +237,14 @@ export default function MobileSquadScreen() {
             value={teamName}
             onChangeText={setTeamName}
           />
-          <TouchableOpacity style={styles.btnPrimary} onPress={handleCreateTeam} disabled={saving}>
-            <Text style={styles.btnText}>{saving ? "Creating..." : "Create Team"}</Text>
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            onPress={handleCreateTeam}
+            disabled={saving}
+          >
+            <Text style={styles.btnText}>
+              {saving ? "Creating..." : "Create Team"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -245,7 +259,12 @@ export default function MobileSquadScreen() {
       <View style={styles.statsBar}>
         <View>
           <Text style={styles.statLabel}>REMAINING</Text>
-          <Text style={[styles.statVal, { color: remainingBudget < 0 ? "#EF4444" : "#10B981" }]}>
+          <Text
+            style={[
+              styles.statVal,
+              { color: remainingBudget < 0 ? "#EF4444" : "#10B981" },
+            ]}
+          >
             {remainingBudget.toFixed(1)} M
           </Text>
         </View>
@@ -253,13 +272,21 @@ export default function MobileSquadScreen() {
           <Text style={styles.statLabel}>SQUAD</Text>
           <Text style={styles.statVal}>{selectedSquad.length} / 15</Text>
         </View>
-        <TouchableOpacity style={styles.btnSave} onPress={handleSave} disabled={saving}>
-          <Text style={styles.btnSaveText}>{saving ? "Saving..." : "Save Squad"}</Text>
+        <TouchableOpacity
+          style={styles.btnSave}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <Text style={styles.btnSaveText}>
+            {saving ? "Saving..." : "Save Squad"}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Selected Squad List */}
-      <Text style={styles.sectionHeader}>Selected Squad ({selectedSquad.length}/15)</Text>
+      <Text style={styles.sectionHeader}>
+        Selected Squad ({selectedSquad.length}/15)
+      </Text>
       {selectedSquad.map((p) => {
         const isCapt = p.id === captainId;
         const isVCapt = p.id === viceCaptainId;
@@ -272,10 +299,14 @@ export default function MobileSquadScreen() {
                 {isVCapt && " (V)"}
               </Text>
               <Text style={styles.playerMeta}>
-                {p.player?.position} • {p.club?.shortName} • {(p.pricePoints / 10).toFixed(1)} M
+                {p.player?.position} • {p.club?.shortName} •{" "}
+                {(p.pricePoints / 10).toFixed(1)} M
               </Text>
             </View>
-            <TouchableOpacity onPress={() => removePlayer(p.id)} style={styles.btnRemove}>
+            <TouchableOpacity
+              onPress={() => removePlayer(p.id)}
+              style={styles.btnRemove}
+            >
               <Text style={styles.btnRemoveText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -293,7 +324,14 @@ export default function MobileSquadScreen() {
             style={[styles.pill, filterPos === pos && styles.pillActive]}
             onPress={() => setFilterPos(pos)}
           >
-            <Text style={[styles.pillText, filterPos === pos && styles.pillTextActive]}>{pos}</Text>
+            <Text
+              style={[
+                styles.pillText,
+                filterPos === pos && styles.pillTextActive,
+              ]}
+            >
+              {pos}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -318,13 +356,17 @@ export default function MobileSquadScreen() {
                 {p.player?.position} • {p.club?.shortName}
               </Text>
             </View>
-            <Text style={styles.priceText}>{(p.pricePoints / 10).toFixed(1)} M</Text>
+            <Text style={styles.priceText}>
+              {(p.pricePoints / 10).toFixed(1)} M
+            </Text>
             <TouchableOpacity
               style={[styles.btnAdd, isSelected && styles.btnAddDisabled]}
               onPress={() => addPlayer(p)}
               disabled={isSelected}
             >
-              <Text style={styles.btnAddText}>{isSelected ? "Added" : "+ Add"}</Text>
+              <Text style={styles.btnAddText}>
+                {isSelected ? "Added" : "+ Add"}
+              </Text>
             </TouchableOpacity>
           </View>
         );

@@ -141,7 +141,10 @@ export default function SquadBuilderPage() {
         token || undefined,
       );
       setTeam(newTeam);
-      setStatusMessage({ type: "success", text: "Fantasy team created successfully!" });
+      setStatusMessage({
+        type: "success",
+        text: "Fantasy team created successfully!",
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Creation failed";
       setStatusMessage({ type: "error", text: msg });
@@ -153,12 +156,18 @@ export default function SquadBuilderPage() {
   // Add/Replace player in squad
   const selectPlayerForSquad = (player: PlayerSeason) => {
     if (selectedSquad.some((p) => p.id === player.id)) {
-      setStatusMessage({ type: "error", text: "Player is already in your squad!" });
+      setStatusMessage({
+        type: "error",
+        text: "Player is already in your squad!",
+      });
       return;
     }
 
     if (selectedSquad.length >= 15) {
-      setStatusMessage({ type: "error", text: "Squad is full (15 players maximum)." });
+      setStatusMessage({
+        type: "error",
+        text: "Squad is full (15 players maximum).",
+      });
       return;
     }
 
@@ -174,7 +183,8 @@ export default function SquadBuilderPage() {
 
     // Auto-assign captain if none
     if (!captainId) setCaptainId(player.id);
-    else if (!viceCaptainId && player.id !== captainId) setViceCaptainId(player.id);
+    else if (!viceCaptainId && player.id !== captainId)
+      setViceCaptainId(player.id);
   };
 
   // Remove player from squad
@@ -207,7 +217,10 @@ export default function SquadBuilderPage() {
 
       // 1. Client-side Squad Validation
       const squadVal = validateSquad(
-        selectedSquad.map((p) => ({ playerSeasonId: p.id, pricePoints: p.pricePoints })),
+        selectedSquad.map((p) => ({
+          playerSeasonId: p.id,
+          pricePoints: p.pricePoints,
+        })),
         playerMap,
       );
 
@@ -222,11 +235,19 @@ export default function SquadBuilderPage() {
       }
 
       // 2. Client-side Lineup Validation
-      const lineupVal = validateStartingLineup(startingIds, squadPlayerIds, playerMap);
+      const lineupVal = validateStartingLineup(
+        startingIds,
+        squadPlayerIds,
+        playerMap,
+      );
       const benchVal = validateBench(benchIds, squadPlayerIds, startingIds);
       const captVal = validateCaptaincy(captainId, viceCaptainId, startingIds);
 
-      const allIssues = [...lineupVal.issues, ...benchVal.issues, ...captVal.issues];
+      const allIssues = [
+        ...lineupVal.issues,
+        ...benchVal.issues,
+        ...captVal.issues,
+      ];
       if (allIssues.length > 0) {
         setStatusMessage({
           type: "error",
@@ -262,7 +283,9 @@ export default function SquadBuilderPage() {
         text: "Squad and starting lineup saved successfully!",
       });
     } catch (err: unknown) {
-      const errObj = err as Error & { details?: { issues?: ValidationIssue[] } };
+      const errObj = err as Error & {
+        details?: { issues?: ValidationIssue[] };
+      };
       const issues = errObj.details?.issues || [];
       setStatusMessage({
         type: "error",
@@ -280,7 +303,8 @@ export default function SquadBuilderPage() {
       if (filterPos !== "ALL" && p.player?.position !== filterPos) return false;
       if (filterClub && p.clubId !== filterClub) return false;
       if (filterSearch) {
-        const name = `${p.player?.firstName} ${p.player?.lastName}`.toLowerCase();
+        const name =
+          `${p.player?.firstName} ${p.player?.lastName}`.toLowerCase();
         if (!name.includes(filterSearch.toLowerCase())) return false;
       }
       return true;
@@ -289,7 +313,10 @@ export default function SquadBuilderPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="container" style={{ padding: "60px", textAlign: "center" }}>
+      <div
+        className="container"
+        style={{ padding: "60px", textAlign: "center" }}
+      >
         <h2>Loading BotolaHub Squad Manager...</h2>
       </div>
     );
@@ -298,13 +325,17 @@ export default function SquadBuilderPage() {
   // Onboarding: Prompt to create a team
   if (!team) {
     return (
-      <div className="container" style={{ maxWidth: "500px", margin: "60px auto" }}>
+      <div
+        className="container"
+        style={{ maxWidth: "500px", margin: "60px auto" }}
+      >
         <div className="hero-card" style={{ padding: "32px" }}>
           <h2 style={{ fontSize: "1.8rem", marginBottom: "12px" }}>
             Create Your Fantasy Team
           </h2>
           <p style={{ color: "var(--text-muted)", marginBottom: "24px" }}>
-            Welcome to BotolaHub! Pick a unique team name to start building your 15-player squad for the 2024-25 season.
+            Welcome to BotolaHub! Pick a unique team name to start building your
+            15-player squad for the 2024-25 season.
           </p>
           <form onSubmit={handleCreateTeam}>
             <input
@@ -367,7 +398,13 @@ export default function SquadBuilderPage() {
           <h1 style={{ fontSize: "1.6rem", fontWeight: "bold", margin: 0 }}>
             {team.name}
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: "4px 0 0" }}>
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "0.9rem",
+              margin: "4px 0 0",
+            }}
+          >
             Gameweek 4 Deadline Open
           </p>
         </div>
@@ -434,7 +471,13 @@ export default function SquadBuilderPage() {
         >
           <div style={{ fontWeight: "bold" }}>{statusMessage.text}</div>
           {statusMessage.issues && statusMessage.issues.length > 0 && (
-            <ul style={{ marginTop: "8px", paddingLeft: "20px", fontSize: "0.85rem" }}>
+            <ul
+              style={{
+                marginTop: "8px",
+                paddingLeft: "20px",
+                fontSize: "0.85rem",
+              }}
+            >
               {statusMessage.issues.map((iss, i) => (
                 <li key={i}>{iss.message}</li>
               ))}
@@ -521,7 +564,9 @@ export default function SquadBuilderPage() {
           />
 
           {/* Goalkeeper Line */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+          <div
+            style={{ display: "flex", justifyContent: "center", gap: "16px" }}
+          >
             {selectedSquad
               .filter((p) => p.player?.position === "GK")
               .map((p) => (
@@ -544,7 +589,13 @@ export default function SquadBuilderPage() {
           </div>
 
           {/* Defenders Line */}
-          <div style={{ display: "flex", justifyContent: "space-around", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              gap: "12px",
+            }}
+          >
             {selectedSquad
               .filter((p) => p.player?.position === "DEF")
               .map((p) => (
@@ -567,7 +618,13 @@ export default function SquadBuilderPage() {
           </div>
 
           {/* Midfielders Line */}
-          <div style={{ display: "flex", justifyContent: "space-around", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              gap: "12px",
+            }}
+          >
             {selectedSquad
               .filter((p) => p.player?.position === "MID")
               .map((p) => (
@@ -590,7 +647,13 @@ export default function SquadBuilderPage() {
           </div>
 
           {/* Forwards Line */}
-          <div style={{ display: "flex", justifyContent: "space-around", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              gap: "12px",
+            }}
+          >
             {selectedSquad
               .filter((p) => p.player?.position === "FWD")
               .map((p) => (
@@ -625,7 +688,13 @@ export default function SquadBuilderPage() {
             height: "640px",
           }}
         >
-          <h3 style={{ fontSize: "1.1rem", fontWeight: "bold", marginBottom: "16px" }}>
+          <h3
+            style={{
+              fontSize: "1.1rem",
+              fontWeight: "bold",
+              marginBottom: "16px",
+            }}
+          >
             Player Selection
           </h3>
 
@@ -642,7 +711,8 @@ export default function SquadBuilderPage() {
                   borderRadius: "6px",
                   border: "none",
                   fontWeight: "bold",
-                  background: filterPos === pos ? "var(--primary)" : "var(--bg-dark)",
+                  background:
+                    filterPos === pos ? "var(--primary)" : "var(--bg-dark)",
                   color: filterPos === pos ? "#FFF" : "var(--text-muted)",
                   cursor: "pointer",
                 }}
@@ -721,13 +791,30 @@ export default function SquadBuilderPage() {
                     <div style={{ fontWeight: "bold", fontSize: "0.85rem" }}>
                       {p.player?.firstName} {p.player?.lastName}
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
                       {p.player?.position} • {p.club?.shortName}
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "0.85rem", color: "#10B981" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: "0.85rem",
+                        color: "#10B981",
+                      }}
+                    >
                       {(p.pricePoints / 10).toFixed(1)} M
                     </div>
                     <button
@@ -779,7 +866,11 @@ function PlayerCard({
         borderRadius: "8px",
         padding: "8px 12px",
         textAlign: "center",
-        border: isCaptain ? "2px solid #F59E0B" : isVice ? "2px solid #3B82F6" : "1px solid rgba(255,255,255,0.2)",
+        border: isCaptain
+          ? "2px solid #F59E0B"
+          : isVice
+            ? "2px solid #3B82F6"
+            : "1px solid rgba(255,255,255,0.2)",
         color: "#FFF",
         minWidth: "90px",
         position: "relative",
@@ -812,8 +903,12 @@ function PlayerCard({
       >
         <div style={{ fontSize: "0.75rem", fontWeight: "bold" }}>
           {player.player?.lastName}
-          {isCaptain && <span style={{ color: "#F59E0B", marginLeft: "4px" }}>(C)</span>}
-          {isVice && <span style={{ color: "#3B82F6", marginLeft: "4px" }}>(V)</span>}
+          {isCaptain && (
+            <span style={{ color: "#F59E0B", marginLeft: "4px" }}>(C)</span>
+          )}
+          {isVice && (
+            <span style={{ color: "#3B82F6", marginLeft: "4px" }}>(V)</span>
+          )}
         </div>
         <div style={{ fontSize: "0.7rem", color: "#9CA3AF" }}>
           {(player.pricePoints / 10).toFixed(1)} M

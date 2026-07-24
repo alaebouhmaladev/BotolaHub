@@ -1,14 +1,6 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  Inject,
-} from "@nestjs/common";
+import { Controller, Get, Param, Query, Inject } from "@nestjs/common";
 import { CatalogService } from "./catalog.service.js";
-import {
-  PlayerFilterQuerySchema,
-} from "@botolahub/contracts";
+import { PlayerFilterQuerySchema } from "@botolahub/contracts";
 
 @Controller()
 export class CatalogController {
