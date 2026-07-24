@@ -338,6 +338,9 @@ async function main() {
     const status: GameweekStatus =
       gw < 4 ? "FINISHED" : gw === 4 ? "ACTIVE" : "SCHEDULED";
 
+    const gwDeadline =
+      gw >= 4 ? new Date(Date.now() + 180 * 86400 * 1000) : deadline;
+
     const gwId = `gw-2024-25-${gw}`;
     const gameweek = await prisma.gameweek.upsert({
       where: { seasonId_number: { seasonId: season.id, number: gw } },
@@ -346,11 +349,11 @@ async function main() {
         seasonId: season.id,
         number: gw,
         status,
-        deadlineUtc: deadline,
+        deadlineUtc: gwDeadline,
         startDate: gwStart,
         endDate: gwEnd,
       },
-      update: { status },
+      update: { status, deadlineUtc: gwDeadline },
     });
     gameweekRecords.push({ id: gameweek.id, number: gw });
   }

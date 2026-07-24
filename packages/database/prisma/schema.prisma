@@ -195,6 +195,7 @@ model PlayerSeason {
   fixtureStats  PlayerFixtureStats[]
   fantasyScores FantasyPlayerScore[]
   squadMembers  FantasySquadMember[]
+  lineupPlayers GameweekLineupPlayer[]
 
   @@unique([playerId, seasonId])
   @@index([seasonId, clubId])
@@ -351,7 +352,8 @@ model GameweekLineupPlayer {
   isStarting     Boolean @default(true)
   benchOrder     Int? // 0-3 for bench players; null for starters
 
-  lineup GameweekLineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  lineup       GameweekLineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  playerSeason PlayerSeason   @relation(fields: [playerSeasonId], references: [id])
 
   @@unique([lineupId, playerSeasonId])
   @@index([lineupId])

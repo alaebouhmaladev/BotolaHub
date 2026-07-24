@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
@@ -18,7 +18,7 @@ export const prisma = new PrismaClient({
   },
 });
 
-export { PrismaClient };
+export { PrismaClient, Prisma };
 
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {

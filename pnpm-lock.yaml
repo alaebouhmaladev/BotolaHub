@@ -81,6 +81,9 @@ importers:
       '@botolahub/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@botolahub/fantasy-engine':
+        specifier: workspace:*
+        version: link:../../packages/fantasy-engine
       '@fastify/cookie':
         specifier: ^9.3.1
         version: 9.4.0
@@ -169,6 +172,9 @@ importers:
       '@botolahub/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@botolahub/fantasy-engine':
+        specifier: workspace:*
+        version: link:../../packages/fantasy-engine
       '@botolahub/localization':
         specifier: workspace:*
         version: link:../../packages/localization
@@ -236,6 +242,9 @@ importers:
       '@botolahub/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@botolahub/fantasy-engine':
+        specifier: workspace:*
+        version: link:../../packages/fantasy-engine
       '@botolahub/localization':
         specifier: workspace:*
         version: link:../../packages/localization
@@ -295,6 +304,9 @@ importers:
       '@botolahub/contracts':
         specifier: workspace:*
         version: link:../contracts
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@botolahub/config':
         specifier: workspace:*
