@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BotolaHubApiClient } from "@botolahub/api-client";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, webClient } from "../../context/AuthContext";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -14,9 +13,6 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const router = useRouter();
-  const client = new BotolaHubApiClient({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1",
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await client.login({ email, password });
+      const res = await webClient.login({ email, password });
       login(res.accessToken, res.user);
       router.push("/dashboard");
     } catch (err: unknown) {

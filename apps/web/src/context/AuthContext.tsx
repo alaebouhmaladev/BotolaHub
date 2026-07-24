@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import { BotolaHubApiClient } from "@botolahub/api-client";
 import { User } from "@botolahub/contracts";
 
@@ -17,41 +23,73 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
+// Stable API client instance created once outside component render tree
+export const webClient = new BotolaHubApiClient({ baseUrl: API_URL });
+
+let refreshPromise: ReturnType<typeof webClient.refresh> | null = null;
+
+export function refreshSessionOnce() {
+  if (!refreshPromise) {
+    refreshPromise = webClient.refresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const client = new BotolaHubApiClient({ baseUrl: API_URL });
+  // Ref to track active restoration state and avoid stale state updates
+  const activeRestorationRef = useRef(true);
 
   useEffect(() => {
-    // Session restoration on web reload via HTTP-only refresh token cookie
-    client
-      .refresh()
+    let cancelled = false;
+
+    refreshSessionOnce()
       .then((res) => {
-        setToken(res.accessToken);
-        setUser(res.user);
+        if (!cancelled && activeRestorationRef.current) {
+          setToken(res.accessToken);
+          setUser(res.user);
+        }
       })
       .catch(() => {
-        setToken(null);
-        setUser(null);
+        if (!cancelled && activeRestorationRef.current) {
+          setToken(null);
+          setUser(null);
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled && activeRestorationRef.current) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = (newToken: string, newUser: User) => {
+    activeRestorationRef.current = true;
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = async () => {
+    // Invalidate any in-flight or pending session restoration
+    activeRestorationRef.current = false;
+    setToken(null);
+    setUser(null);
+
     try {
-      await client.logout();
+      await webClient.logout();
     } catch {
       // ignore network error on logout
     }
-    setToken(null);
-    setUser(null);
   };
 
   return (

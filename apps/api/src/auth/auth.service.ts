@@ -130,34 +130,40 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
 
-    const newSession = await this.prisma.client.$transaction(async (tx) => {
-      const updated = await tx.userSession.updateMany({
-        where: { id: session.id, isRevoked: false },
-        data: { isRevoked: true },
-      });
+    const newSession = await this.prisma.client.$transaction(
+      async (
+        tx: Parameters<
+          Parameters<PrismaService["client"]["$transaction"]>[0]
+        >[0],
+      ) => {
+        const updated = await tx.userSession.updateMany({
+          where: { id: session.id, isRevoked: false },
+          data: { isRevoked: true },
+        });
 
-      if (updated.count === 0) {
-        throw new UnauthorizedException("Concurrent refresh request failed");
-      }
+        if (updated.count === 0) {
+          throw new UnauthorizedException("Concurrent refresh request failed");
+        }
 
-      const created = await tx.userSession.create({
-        data: {
-          userId: session.userId,
-          refreshTokenHash: newSecretHash,
-          familyId: session.familyId,
-          userAgent: session.userAgent,
-          ipAddress: session.ipAddress,
-          expiresAt,
-        },
-      });
+        const created = await tx.userSession.create({
+          data: {
+            userId: session.userId,
+            refreshTokenHash: newSecretHash,
+            familyId: session.familyId,
+            userAgent: session.userAgent,
+            ipAddress: session.ipAddress,
+            expiresAt,
+          },
+        });
 
-      await tx.userSession.update({
-        where: { id: session.id },
-        data: { replacedBy: created.id },
-      });
+        await tx.userSession.update({
+          where: { id: session.id },
+          data: { replacedBy: created.id },
+        });
 
-      return created;
-    });
+        return created;
+      },
+    );
 
     const user = await this.prisma.client.user.findUniqueOrThrow({
       where: { id: session.userId },
