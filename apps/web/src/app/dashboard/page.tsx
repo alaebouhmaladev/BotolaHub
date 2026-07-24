@@ -3,6 +3,7 @@
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -44,23 +45,40 @@ export default function DashboardPage() {
             <strong>Role:</strong> {user.role}
           </p>
         </div>
-        <button
-          onClick={async () => {
-            await logout();
-            router.push("/");
-          }}
-          style={{
-            padding: "10px 20px",
-            background: "#EF4444",
-            color: "#FFF",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
-        >
-          Log Out
-        </button>
+
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <Link
+            href="/squad"
+            style={{
+              padding: "10px 20px",
+              background: "var(--primary)",
+              color: "#FFF",
+              textDecoration: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+            }}
+          >
+            Manage Fantasy Squad
+          </Link>
+
+          <button
+            onClick={async () => {
+              await logout();
+              router.push("/");
+            }}
+            style={{
+              padding: "10px 20px",
+              background: "#EF4444",
+              color: "#FFF",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </div>
   );
