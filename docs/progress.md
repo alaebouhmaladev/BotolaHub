@@ -39,10 +39,10 @@
 
 - **Audit Outcome**: PASS (Web, API, Database, Fantasy Engine, E2E) / UNTESTED (Mobile Simulators)
 - **Audit Report**: [docs/audits/day-03-audit.md](file:///Users/alaebouhala/Documents/Dev%20Projects%20/BotolaHub/BotolaHub/docs/audits/day-03-audit.md)
-- **Verified Tests**: 54 workspace unit & integration tests + 2 Playwright End-to-End browser tests passing.
+- **Verified Tests**: 54 workspace unit & integration tests + 4 Playwright End-to-End browser tests passing.
 - **Pure Fantasy Engine (`packages/fantasy-engine`)**:
-  - Implemented 100.0 credit budget validation, 15-player squad size, exact position distribution (2 GK, 5 DEF, 5 MID, 3 FWD), max 3 players per club, no duplicate players, legal starting lineups (1 GK, ≥3 DEF, ≥3 MID, ≥1 FWD), bench rules, captain/vice-captain validation, and UTC deadline locking.
-  - Unit Tests: 22/22 unit tests passing.
+  - Implemented 100.0 credit budget validation, 15-player squad size, exact position distribution (2 GK, 5 DEF, 5 MID, 3 FWD), max 3 players per club, no duplicate players, legal starting lineups (1 GK, ≥3 DEF, ≥2 MID, ≥1 FWD), bench rules, captain/vice-captain validation, and UTC deadline locking.
+  - Unit Tests: 24/24 unit tests passing (including 4-4-2, 4-3-3, 3-5-2, and legal 5-2-3 two-midfielder formations).
 - **Shared Contracts & DTOs (`packages/contracts`)**:
   - Created Zod validation schemas for catalog queries and fantasy team DTOs (`CreateFantasyTeamDtoSchema`, `UpdateSquadDtoSchema`, `UpdateLineupDtoSchema`).
 - **Typed API Client (`packages/api-client`)**:
@@ -57,8 +57,8 @@
   - Web UI with pitch layout, player catalog picker, position filters, budget counter, auto lineup balancing (`autoAssignLineup`), captain selection, and server/client error display.
   - Single-flight auth refresh in `AuthContext` under React Strict Mode.
   - Next.js rewrites (`apps/web/next.config.mjs`) for same-origin HTTP-only refresh cookie persistence.
-  - Playwright E2E Suite (`apps/web/e2e/squad-builder.spec.ts`): 2/2 tests PASSing, verifying squad creation, saving to DB, and session restoration persistence on browser reload.
+  - Playwright E2E Suite (`apps/web/e2e/squad-builder.spec.ts`): 4/4 tests PASSing, verifying full squad builder journey, search/club/position filters, budget/counter assertions, reload persistence, multilingual AR/FR/EN, Arabic RTL layout, mobile viewport, cross-user 403 authorization, and strict browser error monitoring.
 - **Mobile Squad Builder (`apps/mobile`)**:
   - Expo React Native squad manager screen with position filters, search input, budget tracking, safe-area support, and RTL support (`tsc --noEmit` clean with 0 errors).
   - Simulator runtime status: UNTESTED (simulators unavailable in headless env).
-- **Quality Gate**: 100% PASS across `format:check`, `lint`, `typecheck`, `test` (54 tests), `test:e2e` (2 E2E tests), and `build`.
+- **Quality Gate**: 100% PASS across `format:check`, `lint`, `typecheck`, `test` (54 tests), `test:e2e` (4 E2E tests), and `build`.
