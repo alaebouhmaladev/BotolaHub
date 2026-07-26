@@ -1,6 +1,6 @@
 # BotolaHub — Morocco's Botola Pro Inwi Prediction Game
 
-BotolaHub is a weekly football prediction platform focused exclusively on Morocco's **Botola Pro Inwi**. 
+BotolaHub is a weekly football prediction platform focused exclusively on Morocco's **Botola Pro Inwi**.
 
 Players predict 1X2 match outcomes (Home Win `1`, Draw `X`, Away Win `2`) for every scheduled match in a gameweek to compete in weekly and season-long global and private leaderboards.
 
@@ -27,10 +27,10 @@ Players predict 1X2 match outcomes (Home Win `1`, Draw `X`, Away Win `2`) for ev
 
 Points are calculated using pure deterministic functions based on an immutable snapshot taken at deadline lock:
 
-| Match Category | Correct Prediction | Wrong Prediction | Missing Prediction at Lock |
-| :--- | :---: | :---: | :---: |
-| **Standard Match** | `+3 pts` | `-1 pt` | `-1 pt` |
-| **Favorite Club Match** | `+4 pts` | `-2 pts` | `-2 pts` |
+| Match Category          | Correct Prediction | Wrong Prediction | Missing Prediction at Lock |
+| :---------------------- | :----------------: | :--------------: | :------------------------: |
+| **Standard Match**      |      `+3 pts`      |     `-1 pt`      |          `-1 pt`           |
+| **Favorite Club Match** |      `+4 pts`      |     `-2 pts`     |          `-2 pts`          |
 
 - **Favorite Club Snapshot:** The multiplier is based on the favorite club recorded in the user's gameweek snapshot at lock time. Subsequent profile changes do not alter past settled scores.
 - **Idempotency:** Settlement re-runs with unchanged inputs produce identical point totals and audit records without duplication.
@@ -48,12 +48,12 @@ Points are calculated using pure deterministic functions based on an immutable s
 
 When two or more players share the same point total, rank order is strictly determined by:
 
-1. **Total Points** *(Descending)*
-2. **Number of Correct Predictions** *(Descending)*
-3. **Number of Correct Favorite-Team Predictions** *(Descending)*
-4. **Number of Submitted Predictions** *(Descending)*
-5. **Account Creation Timestamp** *(Ascending)*
-6. **User ID** *(Ascending stable tie-breaker)*
+1. **Total Points** _(Descending)_
+2. **Number of Correct Predictions** _(Descending)_
+3. **Number of Correct Favorite-Team Predictions** _(Descending)_
+4. **Number of Submitted Predictions** _(Descending)_
+5. **Account Creation Timestamp** _(Ascending)_
+6. **User ID** _(Ascending stable tie-breaker)_
 
 ---
 
@@ -108,16 +108,16 @@ BotolaHub/
 
 ## 📅 8-Day Implementation Plan
 
-| Day | Focus Area | Key Deliverables |
-| :--- | :--- | :--- |
-| **Day 1** | **Foundation & Skeleton** | pnpm/Turborepo monorepo, PostgreSQL/Redis Docker setups, health checks, AR/FR/EN localization shells, and one-command launcher. |
-| **Day 2** | **Identity & Profile Onboarding** | Email/Password (Argon2id), Phone OTP, OAuth adapters (Google, Facebook, Apple), mandatory onboarding, favorite club selection, and admin security base. |
-| **Day 3** | **Gameweeks & Prediction Engine** | Admin fixture/gameweek management, 1-hour deadline lock logic, pure 1X2 prediction engine, and responsive prediction home screens. |
-| **Day 4** | **Settlement & Global Rankings** | Audited result entry, idempotent settlement pipeline, score explanation snapshots, deterministic global leaderboards, and result correction recalculations. |
-| **Day 5** | **Private Groups & News Feed** | Multi-group private mini-leagues (min 3 members), expiring invite tokens, group rankings, and localized admin-published news articles. |
-| **Day 6** | **Push Notifications & Sponsorship** | Device token management, 2-hour pre-lock reminders, incomplete prediction targeting, in-app notification inbox, and feature-flagged sponsor ad system. |
-| **Day 7** | **Admin Tools, Security & QA** | Bulk fixture import, analytics summaries, audit logging, rate limiting, security headers, accessibility audit, and Playwright E2E suite. |
-| **Day 8** | **Clean-Room Release Candidate** | Database index optimization, production Docker packaging, Expo preview setup, recovery documentation, full verification, and `v0.1.0-rc.1` tagging. |
+| Day       | Focus Area                           | Key Deliverables                                                                                                                                            |
+| :-------- | :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Day 1** | **Foundation & Skeleton**            | pnpm/Turborepo monorepo, PostgreSQL/Redis Docker setups, health checks, AR/FR/EN localization shells, and one-command launcher.                             |
+| **Day 2** | **Identity & Profile Onboarding**    | Email/Password (Argon2id), Phone OTP, OAuth adapters (Google, Facebook, Apple), mandatory onboarding, favorite club selection, and admin security base.     |
+| **Day 3** | **Gameweeks & Prediction Engine**    | Admin fixture/gameweek management, 1-hour deadline lock logic, pure 1X2 prediction engine, and responsive prediction home screens.                          |
+| **Day 4** | **Settlement & Global Rankings**     | Audited result entry, idempotent settlement pipeline, score explanation snapshots, deterministic global leaderboards, and result correction recalculations. |
+| **Day 5** | **Private Groups & News Feed**       | Multi-group private mini-leagues (min 3 members), expiring invite tokens, group rankings, and localized admin-published news articles.                      |
+| **Day 6** | **Push Notifications & Sponsorship** | Device token management, 2-hour pre-lock reminders, incomplete prediction targeting, in-app notification inbox, and feature-flagged sponsor ad system.      |
+| **Day 7** | **Admin Tools, Security & QA**       | Bulk fixture import, analytics summaries, audit logging, rate limiting, security headers, accessibility audit, and Playwright E2E suite.                    |
+| **Day 8** | **Clean-Room Release Candidate**     | Database index optimization, production Docker packaging, Expo preview setup, recovery documentation, full verification, and `v0.1.0-rc.1` tagging.         |
 
 ---
 
@@ -132,28 +132,33 @@ BotolaHub/
 ### Installation & Local Environment Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/alaebouhmaladev/BotolaHub.git
    cd BotolaHub
    ```
 
 2. **Install dependencies:**
+
    ```bash
    corepack pnpm install
    ```
 
 3. **Configure Environment Variables:**
    Copy the example environment file:
+
    ```bash
    cp .env.example .env
    ```
 
 4. **Start Infrastructure Services:**
+
    ```bash
    docker compose -f infrastructure/docker-compose.yml up -d
    ```
 
 5. **Run Database Migrations & Seeds:**
+
    ```bash
    corepack pnpm --filter @botolahub/database db:deploy
    corepack pnpm --filter @botolahub/database db:seed
