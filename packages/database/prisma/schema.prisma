@@ -111,14 +111,15 @@ model UserSession {
 // ─── Football Domain ─────────────────────────────────────────────────────────
 
 model Competition {
-  id        String   @id @default(uuid())
-  name      String
-  nameAr    String
-  nameFr    String
-  country   String   @default("Morocco")
-  season    Season[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String                  @id @default(uuid())
+  name             String
+  nameAr           String
+  nameFr           String
+  country          String                  @default("Morocco")
+  season           Season[]
+  providerMappings ProviderEntityMapping[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
 }
 
 model Season {
@@ -131,12 +132,13 @@ model Season {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  competition     Competition      @relation(fields: [competitionId], references: [id])
-  clubs           Club[]
-  gameweeks       Gameweek[]
-  playerSeasons   PlayerSeason[]
-  scoringRuleSets ScoringRuleSet[]
-  fantasyTeams    FantasyTeam[]
+  competition      Competition             @relation(fields: [competitionId], references: [id])
+  clubs            Club[]
+  gameweeks        Gameweek[]
+  playerSeasons    PlayerSeason[]
+  scoringRuleSets  ScoringRuleSet[]
+  fantasyTeams     FantasyTeam[]
+  providerMappings ProviderEntityMapping[]
 
   @@unique([competitionId, label])
   @@index([isActive])
@@ -154,10 +156,11 @@ model Club {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  season       Season         @relation(fields: [seasonId], references: [id])
-  players      PlayerSeason[]
-  homeFixtures Fixture[]      @relation("HomeClub")
-  awayFixtures Fixture[]      @relation("AwayClub")
+  season           Season                  @relation(fields: [seasonId], references: [id])
+  players          PlayerSeason[]
+  homeFixtures     Fixture[]               @relation("HomeClub")
+  awayFixtures     Fixture[]               @relation("AwayClub")
+  providerMappings ProviderEntityMapping[]
 
   @@unique([seasonId, shortName])
   @@index([seasonId])
@@ -196,6 +199,7 @@ model PlayerSeason {
   fantasyScores FantasyPlayerScore[]
   squadMembers  FantasySquadMember[]
   lineupPlayers GameweekLineupPlayer[]
+  transfers     Transfer[]
 
   @@unique([playerId, seasonId])
   @@index([seasonId, clubId])
@@ -220,6 +224,8 @@ model Gameweek {
   fantasyTeamScores  FantasyTeamGameweekScore[]
   leaderboardEntries LeaderboardEntry[]
   ingestionRuns      IngestionRun[]
+  scoringRuns        ScoringRun[]
+  providerMappings   ProviderEntityMapping[]
 
   @@unique([seasonId, number])
   @@index([seasonId, status])
@@ -360,18 +366,24 @@ model GameweekLineupPlayer {
 }
 
 model Transfer {
-  id             String       @id @default(uuid())
-  fantasyTeamId  String
-  gameweekId     String
-  type           TransferType
-  playerSeasonId String
-  pricePoints    Int // price at transfer time in tenths
-  pointsCost     Int          @default(0) // 0 for free, 4 for additional
-  createdAt      DateTime     @default(now())
+  id                     String       @id @default(uuid())
+  fantasyTeamId          String
+  gameweekId             String
+  transferGroupKey       String?
+  type                   TransferType
+  playerSeasonId         String
+  outgoingPlayerSeasonId String?
+  incomingPlayerSeasonId String?
+  pricePoints            Int // price at transfer time in tenths
+  pointsCost             Int          @default(0) // 0 for free, 4 for additional
+  deductionPoints        Int          @default(0)
+  createdAt              DateTime     @default(now())
 
-  fantasyTeam FantasyTeam @relation(fields: [fantasyTeamId], references: [id])
+  fantasyTeam  FantasyTeam  @relation(fields: [fantasyTeamId], references: [id])
+  playerSeason PlayerSeason @relation(fields: [playerSeasonId], references: [id])
 
   @@index([fantasyTeamId, gameweekId])
+  @@index([transferGroupKey])
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
@@ -408,6 +420,20 @@ model FantasyTeamGameweekScore {
 
   @@unique([fantasyTeamId, gameweekId])
   @@index([gameweekId])
+}
+
+model ScoringRun {
+  id                     String    @id @default(uuid())
+  gameweekId            String
+  status                 String    @default("PENDING") // PENDING, SUCCESS, FAILED
+  playerScoresCalculated Int       @default(0)
+  teamScoresCalculated   Int       @default(0)
+  startedAt              DateTime  @default(now())
+  finishedAt             DateTime?
+
+  gameweek Gameweek @relation(fields: [gameweekId], references: [id])
+
+  @@index([gameweekId, status])
 }
 
 // ─── Leagues & Leaderboards ───────────────────────────────────────────────────
@@ -467,36 +493,63 @@ model LeaderboardEntry {
 // ─── Operational / Infra ─────────────────────────────────────────────────────
 
 model ProviderEntityMapping {
-  id         String   @id @default(uuid())
-  provider   String // "mock" | "apifootball"
-  entityType String // "player" | "fixture" | "club"
-  providerId String // external provider's ID
-  playerId   String?
-  fixtureId  String?
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  provider      String // "mock" | "apifootball"
+  entityType    String // "player" | "fixture" | "club" | "season" | "gameweek" | "competition"
+  providerId    String // external provider's ID
+  playerId      String?
+  fixtureId     String?
+  clubId        String?
+  seasonId      String?
+  gameweekId    String?
+  competitionId String?
+  createdAt     DateTime @default(now())
 
-  player  Player?  @relation(fields: [playerId], references: [id])
-  fixture Fixture? @relation(fields: [fixtureId], references: [id])
+  player      Player?      @relation(fields: [playerId], references: [id])
+  fixture     Fixture?     @relation(fields: [fixtureId], references: [id])
+  club        Club?        @relation(fields: [clubId], references: [id])
+  season      Season?      @relation(fields: [seasonId], references: [id])
+  gameweek    Gameweek?    @relation(fields: [gameweekId], references: [id])
+  competition Competition? @relation(fields: [competitionId], references: [id])
 
   @@unique([provider, entityType, providerId])
   @@index([provider, entityType])
 }
 
 model IngestionRun {
-  id          String          @id @default(uuid())
-  gameweekId  String?
-  provider    String
-  jobType     String // "players" | "fixtures" | "live_events" | "final_stats"
-  status      IngestionStatus @default(PENDING)
-  recordCount Int             @default(0)
-  errorCount  Int             @default(0)
-  errorDetail String?
-  startedAt   DateTime        @default(now())
-  finishedAt  DateTime?
+  id            String                 @id @default(uuid())
+  gameweekId    String?
+  provider      String
+  jobType       String // "players" | "fixtures" | "live_events" | "final_stats"
+  status        IngestionStatus        @default(PENDING)
+  recordCount   Int                    @default(0)
+  insertedCount Int                    @default(0)
+  updatedCount  Int                    @default(0)
+  skippedCount  Int                    @default(0)
+  failedCount   Int                    @default(0)
+  errorCount    Int                    @default(0)
+  errorDetail   String?
+  startedAt     DateTime               @default(now())
+  finishedAt    DateTime?
+  itemFailures  IngestionItemFailure[]
 
   gameweek Gameweek? @relation(fields: [gameweekId], references: [id])
 
   @@index([gameweekId, status])
+  @@index([jobType, startedAt])
+}
+
+model IngestionItemFailure {
+  id             String   @id @default(uuid())
+  ingestionRunId String
+  externalId     String
+  entityType     String
+  errorReason    String
+  createdAt      DateTime @default(now())
+
+  ingestionRun IngestionRun @relation(fields: [ingestionRunId], references: [id], onDelete: Cascade)
+
+  @@index([ingestionRunId])
 }
 
 model ScoringRuleSet {

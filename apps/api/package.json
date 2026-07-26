@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@botolahub/contracts": "workspace:*",
+    "@botolahub/data-providers": "workspace:*",
     "@botolahub/database": "workspace:*",
     "@botolahub/fantasy-engine": "workspace:*",
     "@fastify/cookie": "^9.3.1",

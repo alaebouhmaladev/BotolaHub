@@ -85,4 +85,16 @@ export class FantasyTeamController {
     );
     return { data };
   }
+
+  @Get(":id/scores/:gameweekId")
+  async getGameweekScore(
+    @Param("id") id: string,
+    @Param("gameweekId") gameweekId: string,
+  ) {
+    const data = await this.fantasyTeamService.getTeamGameweekScore(
+      id,
+      gameweekId,
+    );
+    return { data };
+  }
 }

@@ -58,6 +58,21 @@ describe("Fantasy Teams API (Integration)", () => {
     });
     if (existingUsers.length > 0) {
       const uIds = existingUsers.map((u) => u.id);
+      await prisma.client.transfer.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.fantasyTeamGameweekScore.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.gameweekLineupPlayer.deleteMany({
+        where: { lineup: { fantasyTeam: { userId: { in: uIds } } } },
+      });
+      await prisma.client.gameweekLineup.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.fantasySquadMember.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
       await prisma.client.fantasyTeam.deleteMany({
         where: { userId: { in: uIds } },
       });
@@ -126,15 +141,27 @@ describe("Fantasy Teams API (Integration)", () => {
 
   afterAll(async () => {
     if (userAId || userBId) {
+      const uIds = [userAId, userBId].filter(Boolean);
+      await prisma.client.transfer.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.fantasyTeamGameweekScore.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.gameweekLineupPlayer.deleteMany({
+        where: { lineup: { fantasyTeam: { userId: { in: uIds } } } },
+      });
+      await prisma.client.gameweekLineup.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
+      await prisma.client.fantasySquadMember.deleteMany({
+        where: { fantasyTeam: { userId: { in: uIds } } },
+      });
       await prisma.client.fantasyTeam.deleteMany({
-        where: {
-          userId: { in: [userAId, userBId].filter(Boolean) },
-        },
+        where: { userId: { in: uIds } },
       });
       await prisma.client.user.deleteMany({
-        where: {
-          id: { in: [userAId, userBId].filter(Boolean) },
-        },
+        where: { id: { in: uIds } },
       });
     }
     await app.close();

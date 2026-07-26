@@ -8,6 +8,10 @@ import {
   calculateRemainingBudget,
   deriveFormation,
   isDeadlineLocked,
+  calculatePlayerScore,
+  calculateFreeTransfers,
+  calculateTransferDeduction,
+  calculateTeamGameweekScore,
   PlayerData,
   SquadPlayerInput,
 } from "./index";
@@ -512,6 +516,146 @@ describe("Pure Fantasy Engine Rules", () => {
     it("returns true immediately after deadline", () => {
       const currentTime = "2026-08-01T18:00:00.001Z";
       expect(isDeadlineLocked(deadline, currentTime)).toBe(true);
+    });
+  });
+
+  describe("Player Scoring Rules (calculatePlayerScore)", () => {
+    it("awards 2 pts for 60+ mins and 1 pt for 1-59 mins", () => {
+      const s60 = calculatePlayerScore("MID", {
+        minutesPlayed: 60,
+        goals: 0,
+        assists: 0,
+        cleanSheet: false,
+        saves: 0,
+        penaltiesSaved: 0,
+        penaltiesMissed: 0,
+        yellowCards: 0,
+        redCards: 0,
+        ownGoals: 0,
+        goalsConceded: 0,
+      });
+      expect(s60.totalPoints).toBe(2);
+
+      const s30 = calculatePlayerScore("MID", {
+        minutesPlayed: 30,
+        goals: 0,
+        assists: 0,
+        cleanSheet: false,
+        saves: 0,
+        penaltiesSaved: 0,
+        penaltiesMissed: 0,
+        yellowCards: 0,
+        redCards: 0,
+        ownGoals: 0,
+        goalsConceded: 0,
+      });
+      expect(s30.totalPoints).toBe(1);
+    });
+
+    it("awards correct goal points by position (DEF: 6, MID: 5, FWD: 4)", () => {
+      const baseStats = {
+        minutesPlayed: 90,
+        goals: 1,
+        assists: 0,
+        cleanSheet: false,
+        saves: 0,
+        penaltiesSaved: 0,
+        penaltiesMissed: 0,
+        yellowCards: 0,
+        redCards: 0,
+        ownGoals: 0,
+        goalsConceded: 0,
+      };
+
+      expect(calculatePlayerScore("DEF", baseStats).totalPoints).toBe(8); // 2 mins + 6 goal
+      expect(calculatePlayerScore("MID", baseStats).totalPoints).toBe(7); // 2 mins + 5 goal
+      expect(calculatePlayerScore("FWD", baseStats).totalPoints).toBe(6); // 2 mins + 4 goal
+    });
+
+    it("awards clean sheet points (DEF: 4, MID: 1) only if 60+ mins played", () => {
+      const stats90 = {
+        minutesPlayed: 90,
+        goals: 0,
+        assists: 0,
+        cleanSheet: true,
+        saves: 0,
+        penaltiesSaved: 0,
+        penaltiesMissed: 0,
+        yellowCards: 0,
+        redCards: 0,
+        ownGoals: 0,
+        goalsConceded: 0,
+      };
+      expect(calculatePlayerScore("DEF", stats90).totalPoints).toBe(6); // 2 + 4
+
+      const stats45 = { ...stats90, minutesPlayed: 45 };
+      expect(calculatePlayerScore("DEF", stats45).totalPoints).toBe(1); // 1 min (clean sheet rejected <60 mins)
+    });
+
+    it("deducts points for cards, own goals, and goals conceded", () => {
+      const stats = {
+        minutesPlayed: 90,
+        goals: 0,
+        assists: 0,
+        cleanSheet: false,
+        saves: 0,
+        penaltiesSaved: 0,
+        penaltiesMissed: 0,
+        yellowCards: 1, // -1
+        redCards: 0,
+        ownGoals: 1, // -2
+        goalsConceded: 4, // -2 (1 per 2 goals)
+      };
+      // Total: 2 (mins) - 1 (yellow) - 2 (ownGoal) - 2 (conceded) = -3
+      expect(calculatePlayerScore("DEF", stats).totalPoints).toBe(-3);
+    });
+  });
+
+  describe("Free Transfers & Transfer Costs", () => {
+    it("calculates rollover free transfers up to max of 2", () => {
+      expect(calculateFreeTransfers(1, 0)).toBe(2); // 1 remaining + 1 = 2
+      expect(calculateFreeTransfers(2, 0)).toBe(2); // 2 remaining -> max 2
+      expect(calculateFreeTransfers(2, 1)).toBe(2); // 1 remaining + 1 = 2
+      expect(calculateFreeTransfers(2, 2)).toBe(1); // 0 remaining + 1 = 1
+    });
+
+    it("calculates transfer deductions (0 for free, 4 per excess)", () => {
+      expect(calculateTransferDeduction(1, 1)).toEqual({
+        deductionPoints: 0,
+        paidTransfersCount: 0,
+      });
+      expect(calculateTransferDeduction(2, 1)).toEqual({
+        deductionPoints: 4,
+        paidTransfersCount: 1,
+      });
+      expect(calculateTransferDeduction(3, 1)).toEqual({
+        deductionPoints: 8,
+        paidTransfersCount: 2,
+      });
+    });
+  });
+
+  describe("Team Scoring Engine & Captain Fallback", () => {
+    it("doubles captain score when captain plays", () => {
+      const starters = [
+        { playerSeasonId: "p1", basePoints: 5, minutesPlayed: 90 },
+        { playerSeasonId: "p2", basePoints: 3, minutesPlayed: 90 },
+      ];
+      const res = calculateTeamGameweekScore(starters, "p1", "p2", 0);
+      expect(res.totalPoints).toBe(13); // 5+3 + 5 (captain) = 13
+      expect(res.activeCaptainId).toBe("p1");
+      expect(res.isViceCaptainActive).toBe(false);
+    });
+
+    it("uses vice-captain 2x fallback when captain plays 0 minutes", () => {
+      const starters = [
+        { playerSeasonId: "p1", basePoints: 0, minutesPlayed: 0 },
+        { playerSeasonId: "p2", basePoints: 6, minutesPlayed: 90 },
+      ];
+      const res = calculateTeamGameweekScore(starters, "p1", "p2", 4);
+      expect(res.totalPoints).toBe(8); // 0+6 + 6 (vice-captain) - 4 (deduction) = 8
+      expect(res.activeCaptainId).toBe("p2");
+      expect(res.isViceCaptainActive).toBe(true);
     });
   });
 });

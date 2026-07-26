@@ -373,4 +373,22 @@ export class FantasyTeamService {
 
     return this.getTeamById(teamId);
   }
+
+  async getTeamGameweekScore(teamId: string, gameweekId: string) {
+    const score = await this.prisma.client.fantasyTeamGameweekScore.findUnique({
+      where: {
+        fantasyTeamId_gameweekId: {
+          fantasyTeamId: teamId,
+          gameweekId,
+        },
+      },
+    });
+
+    if (!score) {
+      throw new NotFoundException(
+        `Gameweek score for team ${teamId} in gameweek ${gameweekId} not found`,
+      );
+    }
+    return score;
+  }
 }

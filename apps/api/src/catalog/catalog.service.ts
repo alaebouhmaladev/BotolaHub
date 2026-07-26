@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Inject } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { PlayerFilterQuery } from "@botolahub/contracts";
+import { PlayerFilterQuery, FixtureStatus } from "@botolahub/contracts";
 import { Prisma } from "@botolahub/database";
 
 @Injectable()
@@ -126,12 +126,22 @@ export class CatalogService {
     return playerSeason;
   }
 
-  async getGameweeks() {
-    const activeSeason = await this.getActiveSeason();
+  async getGameweeks(seasonId?: string) {
+    const targetSeasonId = seasonId || (await this.getActiveSeason()).id;
     return this.prisma.client.gameweek.findMany({
-      where: { seasonId: activeSeason.id },
+      where: { seasonId: targetSeasonId },
       orderBy: { number: "asc" },
     });
+  }
+
+  async getGameweek(id: string) {
+    const gw = await this.prisma.client.gameweek.findUnique({
+      where: { id },
+    });
+    if (!gw) {
+      throw new NotFoundException(`Gameweek with ID ${id} not found`);
+    }
+    return gw;
   }
 
   async getActiveGameweek() {
@@ -151,19 +161,75 @@ export class CatalogService {
     return gw;
   }
 
-  async getFixtures() {
-    const activeSeason = await this.getActiveSeason();
+  async getFixtures(query?: {
+    seasonId?: string;
+    gameweekId?: string;
+    clubId?: string;
+    status?: FixtureStatus;
+  }) {
+    const where: Prisma.FixtureWhereInput = {};
+
+    if (query?.gameweekId) {
+      where.gameweekId = query.gameweekId;
+    } else if (query?.seasonId) {
+      where.gameweek = { seasonId: query.seasonId };
+    } else {
+      const activeSeason = await this.getActiveSeason();
+      where.gameweek = { seasonId: activeSeason.id };
+    }
+
+    if (query?.clubId) {
+      where.OR = [{ homeClubId: query.clubId }, { awayClubId: query.clubId }];
+    }
+
+    if (query?.status) {
+      where.status = query.status;
+    }
+
     return this.prisma.client.fixture.findMany({
-      where: {
-        gameweek: {
-          seasonId: activeSeason.id,
-        },
-      },
+      where,
       include: {
         homeClub: true,
         awayClub: true,
       },
       orderBy: { kickoffUtc: "asc" },
+    });
+  }
+
+  async getFixture(id: string) {
+    const fixture = await this.prisma.client.fixture.findUnique({
+      where: { id },
+      include: {
+        homeClub: true,
+        awayClub: true,
+      },
+    });
+    if (!fixture) {
+      throw new NotFoundException(`Fixture with ID ${id} not found`);
+    }
+    return fixture;
+  }
+
+  async getFixtureEvents(id: string) {
+    await this.getFixture(id);
+    return this.prisma.client.fixtureEvent.findMany({
+      where: { fixtureId: id },
+      orderBy: { minute: "asc" },
+    });
+  }
+
+  async getFixtureStats(id: string) {
+    await this.getFixture(id);
+    return this.prisma.client.playerFixtureStats.findMany({
+      where: { fixtureId: id },
+      include: {
+        playerSeason: {
+          include: {
+            player: true,
+            club: true,
+          },
+        },
+      },
     });
   }
 }

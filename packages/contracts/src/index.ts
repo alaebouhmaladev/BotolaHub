@@ -192,6 +192,36 @@ export const FixtureSchema = z.object({
 });
 export type Fixture = z.infer<typeof FixtureSchema>;
 
+export const FixtureEventSchema = z.object({
+  id: z.string(),
+  fixtureId: z.string(),
+  minute: z.number(),
+  type: z.string(),
+  playerId: z.string().nullable().optional(),
+  detail: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+});
+export type FixtureEvent = z.infer<typeof FixtureEventSchema>;
+
+export const PlayerFixtureStatsSchema = z.object({
+  id: z.string(),
+  playerSeasonId: z.string(),
+  fixtureId: z.string(),
+  minutesPlayed: z.number(),
+  goals: z.number(),
+  assists: z.number(),
+  cleanSheet: z.boolean(),
+  yellowCards: z.number(),
+  redCards: z.number(),
+  saves: z.number(),
+  penaltySaves: z.number(),
+  penaltyMisses: z.number(),
+  ownGoals: z.number(),
+  goalsConceded: z.number(),
+  playerSeason: PlayerSeasonSchema.optional(),
+});
+export type PlayerFixtureStats = z.infer<typeof PlayerFixtureStatsSchema>;
+
 export const PlayerFilterQuerySchema = z.object({
   search: z.string().optional(),
   clubId: z.string().optional(),
@@ -317,3 +347,102 @@ export const FantasyTeamSchema = z.object({
   gameweekLineups: z.array(GameweekLineupSchema).optional(),
 });
 export type FantasyTeam = z.infer<typeof FantasyTeamSchema>;
+
+// ─── Transfer Contracts ──────────────────────────────────────────────────────
+
+export const TransferPairSchema = z.object({
+  outgoingPlayerSeasonId: z.string(),
+  incomingPlayerSeasonId: z.string(),
+});
+export type TransferPair = z.infer<typeof TransferPairSchema>;
+
+export const TransferPreviewDtoSchema = z.object({
+  transfers: z
+    .array(TransferPairSchema)
+    .min(1, "At least one transfer required"),
+});
+export type TransferPreviewDto = z.infer<typeof TransferPreviewDtoSchema>;
+
+export const TransferPreviewResultSchema = z.object({
+  isValid: z.boolean(),
+  transfersCount: z.number(),
+  freeTransfersAvailable: z.number(),
+  paidTransfersCount: z.number(),
+  deductionPoints: z.number(),
+  costDifferenceTenths: z.number(),
+  newBudgetPoints: z.number(),
+  issues: z.array(ValidationIssueSchema),
+});
+export type TransferPreviewResult = z.infer<typeof TransferPreviewResultSchema>;
+
+export const TransferConfirmDtoSchema = z.object({
+  transfers: z
+    .array(TransferPairSchema)
+    .min(1, "At least one transfer required"),
+  idempotencyKey: z.string().optional(),
+});
+export type TransferConfirmDto = z.infer<typeof TransferConfirmDtoSchema>;
+
+export const TransferConfirmResultSchema = z.object({
+  success: z.boolean(),
+  transfersCount: z.number(),
+  deductionPoints: z.number(),
+  remainingBudgetPoints: z.number(),
+  transferGroupKey: z.string(),
+  squad: z.array(FantasySquadMemberSchema),
+});
+export type TransferConfirmResult = z.infer<typeof TransferConfirmResultSchema>;
+
+export const TransferHistoryItemSchema = z.object({
+  id: z.string(),
+  fantasyTeamId: z.string(),
+  gameweekId: z.string(),
+  transferGroupKey: z.string().nullable().optional(),
+  type: z.enum(["IN", "OUT"]),
+  playerSeasonId: z.string(),
+  outgoingPlayerSeasonId: z.string().nullable().optional(),
+  incomingPlayerSeasonId: z.string().nullable().optional(),
+  pricePoints: z.number(),
+  pointsCost: z.number(),
+  deductionPoints: z.number(),
+  createdAt: z.string(),
+  playerSeason: PlayerSeasonSchema.optional(),
+});
+export type TransferHistoryItem = z.infer<typeof TransferHistoryItemSchema>;
+
+// ─── Scoring Contracts ───────────────────────────────────────────────────────
+
+export const PlayerGameweekScoreSchema = z.object({
+  id: z.string(),
+  playerSeasonId: z.string(),
+  gameweekId: z.string(),
+  points: z.number(),
+  breakdown: z.array(
+    z.object({
+      key: z.string(),
+      points: z.number(),
+      count: z.number(),
+    }),
+  ),
+  createdAt: z.string().optional(),
+});
+export type PlayerGameweekScore = z.infer<typeof PlayerGameweekScoreSchema>;
+
+export const TeamGameweekScoreSchema = z.object({
+  id: z.string(),
+  fantasyTeamId: z.string(),
+  gameweekId: z.string(),
+  points: z.number(),
+  transferCost: z.number(),
+  captainBonus: z.number(),
+  breakdown: z.object({
+    startingPoints: z.number(),
+    captainBonusPoints: z.number(),
+    transferDeductionPoints: z.number(),
+    activeCaptainId: z.string(),
+    isViceCaptainActive: z.boolean(),
+  }),
+  isProvisional: z.boolean(),
+  createdAt: z.string().optional(),
+});
+export type TeamGameweekScore = z.infer<typeof TeamGameweekScoreSchema>;

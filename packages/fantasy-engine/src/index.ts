@@ -30,6 +30,8 @@ export const SQUAD_SIZE = 15;
 export const LINEUP_SIZE = 11;
 export const BENCH_SIZE = 4;
 export const MAX_PLAYERS_PER_CLUB = 3;
+export const TRANSFER_POINT_COST = 4;
+export const MAX_FREE_TRANSFERS_ROLLOVER = 2;
 
 export const REQUIRED_SQUAD_POSITIONS: Record<PlayerPosition, number> = {
   GK: 2,
@@ -403,6 +405,9 @@ export function validateCaptaincy(
   };
 }
 
+/**
+ * Pure player fixture score calculator.
+ */
 export function calculatePlayerScore(
   position: PlayerPosition,
   stats: PlayerFixtureStatsInput,
@@ -508,4 +513,100 @@ export function calculatePlayerScore(
   }
 
   return { totalPoints, breakdown };
+}
+
+/**
+ * Free transfer calculation rules.
+ * 1 free transfer added per gameweek. Max rollover = 2 free transfers.
+ */
+export function calculateFreeTransfers(
+  currentFreeTransfers: number,
+  transfersMadeCount: number,
+): number {
+  const remaining = Math.max(0, currentFreeTransfers - transfersMadeCount);
+  const nextGwFree = remaining + 1;
+  return Math.min(MAX_FREE_TRANSFERS_ROLLOVER, nextGwFree);
+}
+
+/**
+ * Calculate point deduction for excess transfers.
+ * Free transfers applied first. Excess transfers cost 4 points each.
+ */
+export function calculateTransferDeduction(
+  transfersMadeCount: number,
+  freeTransfersAvailable: number,
+): { deductionPoints: number; paidTransfersCount: number } {
+  const paidTransfersCount = Math.max(
+    0,
+    transfersMadeCount - freeTransfersAvailable,
+  );
+  const deductionPoints = paidTransfersCount * TRANSFER_POINT_COST;
+  return { deductionPoints, paidTransfersCount };
+}
+
+export interface StartingPlayerScoreInput {
+  playerSeasonId: string;
+  basePoints: number;
+  minutesPlayed: number;
+}
+
+export interface TeamGameweekScoreResult {
+  totalPoints: number;
+  startingPoints: number;
+  captainBonusPoints: number;
+  transferDeductionPoints: number;
+  activeCaptainId: string;
+  isViceCaptainActive: boolean;
+}
+
+/**
+ * Pure team gameweek total calculator.
+ * Includes captain 2x bonus, vice-captain fallback when captain doesn't play (0 mins),
+ * and transfer point deductions.
+ */
+export function calculateTeamGameweekScore(
+  startingPlayers: StartingPlayerScoreInput[],
+  captainId: string,
+  viceCaptainId: string,
+  transferDeductionPoints: number = 0,
+): TeamGameweekScoreResult {
+  const captain = startingPlayers.find((p) => p.playerSeasonId === captainId);
+  const viceCaptain = startingPlayers.find(
+    (p) => p.playerSeasonId === viceCaptainId,
+  );
+
+  let activeCaptainId = captainId;
+  let isViceCaptainActive = false;
+
+  if (
+    captain &&
+    captain.minutesPlayed === 0 &&
+    viceCaptain &&
+    viceCaptain.minutesPlayed > 0
+  ) {
+    activeCaptainId = viceCaptainId;
+    isViceCaptainActive = true;
+  }
+
+  let startingPoints = 0;
+  let captainBonusPoints = 0;
+
+  for (const player of startingPlayers) {
+    startingPoints += player.basePoints;
+    if (player.playerSeasonId === activeCaptainId) {
+      captainBonusPoints = player.basePoints; // 2x means 1 extra set of base points
+    }
+  }
+
+  const totalPoints =
+    startingPoints + captainBonusPoints - transferDeductionPoints;
+
+  return {
+    totalPoints,
+    startingPoints,
+    captainBonusPoints,
+    transferDeductionPoints,
+    activeCaptainId,
+    isViceCaptainActive,
+  };
 }

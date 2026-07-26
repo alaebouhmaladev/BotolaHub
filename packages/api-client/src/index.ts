@@ -21,6 +21,10 @@ import {
   GameweekSchema,
   Fixture,
   FixtureSchema,
+  FixtureEvent,
+  FixtureEventSchema,
+  PlayerFixtureStats,
+  PlayerFixtureStatsSchema,
   PlayerFilterQuery,
   createPaginatedResponseSchema,
   FantasyTeam,
@@ -28,6 +32,16 @@ import {
   CreateFantasyTeamDto,
   UpdateSquadDto,
   UpdateLineupDto,
+  TransferPreviewDto,
+  TransferPreviewResult,
+  TransferPreviewResultSchema,
+  TransferConfirmDto,
+  TransferConfirmResult,
+  TransferConfirmResultSchema,
+  TransferHistoryItem,
+  TransferHistoryItemSchema,
+  TeamGameweekScore,
+  TeamGameweekScoreSchema,
 } from "@botolahub/contracts";
 import { z } from "zod";
 
@@ -243,12 +257,21 @@ export class BotolaHubApiClient {
     return PlayerSeasonSchema.parse(body.data);
   }
 
-  async getGameweeks(): Promise<Gameweek[]> {
-    const res = await this.customFetch(`${this.baseUrl}/gameweeks`);
+  async getGameweeks(seasonId?: string): Promise<Gameweek[]> {
+    const query = seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : "";
+    const res = await this.customFetch(`${this.baseUrl}/gameweeks${query}`);
     const body = await res.json();
     if (!res.ok)
       throw new Error(body.error?.message || "Failed to fetch gameweeks");
     return z.array(GameweekSchema).parse(body.data);
+  }
+
+  async getGameweek(id: string): Promise<Gameweek> {
+    const res = await this.customFetch(`${this.baseUrl}/gameweeks/${id}`);
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(body.error?.message || "Failed to fetch gameweek");
+    return GameweekSchema.parse(body.data);
   }
 
   async getActiveGameweek(): Promise<Gameweek> {
@@ -259,15 +282,57 @@ export class BotolaHubApiClient {
     return GameweekSchema.parse(body.data);
   }
 
-  async getFixtures(): Promise<Fixture[]> {
-    const res = await this.customFetch(`${this.baseUrl}/fixtures`);
+  async getFixtures(query?: {
+    seasonId?: string;
+    gameweekId?: string;
+    clubId?: string;
+    status?: string;
+  }): Promise<Fixture[]> {
+    const params = new URLSearchParams();
+    if (query?.seasonId) params.append("seasonId", query.seasonId);
+    if (query?.gameweekId) params.append("gameweekId", query.gameweekId);
+    if (query?.clubId) params.append("clubId", query.clubId);
+    if (query?.status) params.append("status", query.status);
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const res = await this.customFetch(
+      `${this.baseUrl}/fixtures${queryString}`,
+    );
     const body = await res.json();
     if (!res.ok)
       throw new Error(body.error?.message || "Failed to fetch fixtures");
     return z.array(FixtureSchema).parse(body.data);
   }
 
-  // ─── Fantasy Team APIs ───────────────────────────────────────────────────
+  async getFixture(id: string): Promise<Fixture> {
+    const res = await this.customFetch(`${this.baseUrl}/fixtures/${id}`);
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(body.error?.message || "Failed to fetch fixture");
+    return FixtureSchema.parse(body.data);
+  }
+
+  async getFixtureEvents(id: string): Promise<FixtureEvent[]> {
+    const res = await this.customFetch(`${this.baseUrl}/fixtures/${id}/events`);
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(body.error?.message || "Failed to fetch fixture events");
+    return z.array(FixtureEventSchema).parse(body.data);
+  }
+
+  async getFixtureStats(id: string): Promise<PlayerFixtureStats[]> {
+    const res = await this.customFetch(
+      `${this.baseUrl}/fixtures/${id}/statistics`,
+    );
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(
+        body.error?.message || "Failed to fetch fixture statistics",
+      );
+    return z.array(PlayerFixtureStatsSchema).parse(body.data);
+  }
+
+  // ─── Fantasy Team & Transfer APIs ────────────────────────────────────────
 
   async createFantasyTeam(
     dto: CreateFantasyTeamDto,
@@ -375,5 +440,88 @@ export class BotolaHubApiClient {
       throw err;
     }
     return FantasyTeamSchema.parse(body.data);
+  }
+
+  async previewTransfers(
+    dto: TransferPreviewDto,
+    token?: string,
+  ): Promise<TransferPreviewResult> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await this.customFetch(`${this.baseUrl}/transfers/preview`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(dto),
+      credentials: "include",
+    });
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(body.error?.message || "Failed to preview transfers");
+    return TransferPreviewResultSchema.parse(body.data);
+  }
+
+  async confirmTransfers(
+    dto: TransferConfirmDto,
+    token?: string,
+  ): Promise<TransferConfirmResult> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await this.customFetch(`${this.baseUrl}/transfers/confirm`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(dto),
+      credentials: "include",
+    });
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(body.error?.message || "Failed to confirm transfers");
+    return TransferConfirmResultSchema.parse(body.data);
+  }
+
+  async getTransferHistory(token?: string): Promise<TransferHistoryItem[]> {
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await this.customFetch(`${this.baseUrl}/transfers/history`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(
+        body.error?.message || "Failed to fetch transfer history",
+      );
+    return z.array(TransferHistoryItemSchema).parse(body.data);
+  }
+
+  async getTeamGameweekScore(
+    teamId: string,
+    gameweekId: string,
+    token?: string,
+  ): Promise<TeamGameweekScore> {
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await this.customFetch(
+      `${this.baseUrl}/fantasy-teams/${teamId}/scores/${gameweekId}`,
+      {
+        method: "GET",
+        headers,
+        credentials: "include",
+      },
+    );
+    const body = await res.json();
+    if (!res.ok)
+      throw new Error(
+        body.error?.message || "Failed to fetch team gameweek score",
+      );
+    return TeamGameweekScoreSchema.parse(body.data);
   }
 }

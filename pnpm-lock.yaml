@@ -78,6 +78,9 @@ importers:
       '@botolahub/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@botolahub/data-providers':
+        specifier: workspace:*
+        version: link:../../packages/data-providers
       '@botolahub/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -346,6 +349,10 @@ importers:
         version: 1.6.1(@types/node@20.19.43)(terser@5.49.0)
 
   packages/data-providers:
+    dependencies:
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@botolahub/config':
         specifier: workspace:*

@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, Inject } from "@nestjs/common";
 import { CatalogService } from "./catalog.service.js";
-import { PlayerFilterQuerySchema } from "@botolahub/contracts";
+import { PlayerFilterQuerySchema, FixtureStatus } from "@botolahub/contracts";
 
 @Controller()
 export class CatalogController {
@@ -46,8 +46,8 @@ export class CatalogController {
   }
 
   @Get("gameweeks")
-  async getGameweeks() {
-    const data = await this.catalogService.getGameweeks();
+  async getGameweeks(@Query("seasonId") seasonId?: string) {
+    const data = await this.catalogService.getGameweeks(seasonId);
     return { data };
   }
 
@@ -57,9 +57,43 @@ export class CatalogController {
     return { data };
   }
 
+  @Get("gameweeks/:id")
+  async getGameweek(@Param("id") id: string) {
+    const data = await this.catalogService.getGameweek(id);
+    return { data };
+  }
+
   @Get("fixtures")
-  async getFixtures() {
-    const data = await this.catalogService.getFixtures();
+  async getFixtures(
+    @Query("seasonId") seasonId?: string,
+    @Query("gameweekId") gameweekId?: string,
+    @Query("clubId") clubId?: string,
+    @Query("status") status?: FixtureStatus,
+  ) {
+    const data = await this.catalogService.getFixtures({
+      seasonId,
+      gameweekId,
+      clubId,
+      status,
+    });
+    return { data };
+  }
+
+  @Get("fixtures/:id")
+  async getFixture(@Param("id") id: string) {
+    const data = await this.catalogService.getFixture(id);
+    return { data };
+  }
+
+  @Get("fixtures/:id/events")
+  async getFixtureEvents(@Param("id") id: string) {
+    const data = await this.catalogService.getFixtureEvents(id);
+    return { data };
+  }
+
+  @Get("fixtures/:id/statistics")
+  async getFixtureStats(@Param("id") id: string) {
+    const data = await this.catalogService.getFixtureStats(id);
     return { data };
   }
 }
