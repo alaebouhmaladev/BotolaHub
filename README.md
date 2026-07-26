@@ -2,7 +2,7 @@
 
 BotolaHub is a weekly football prediction platform focused exclusively on Morocco's **Botola Pro Inwi**. 
 
-Players predict the 1X2 match outcomes (Home Win `1`, Draw `X`, Away Win `2`) for every scheduled match in a gameweek to compete in weekly and season-long global and private leaderboards.
+Players predict 1X2 match outcomes (Home Win `1`, Draw `X`, Away Win `2`) for every scheduled match in a gameweek to compete in weekly and season-long global and private leaderboards.
 
 > ⚠️ **Note:** BotolaHub is a match prediction game, **not** a fantasy football platform. There are no player prices, transfers, squad budgets, formations, or player-level fantasy statistics.
 
@@ -11,16 +11,17 @@ Players predict the 1X2 match outcomes (Home Win `1`, Draw `X`, Away Win `2`) fo
 ## ⚽ Product Overview
 
 - **Match Outcome Predictions (1X2):** Predict Home Win (`1`), Draw (`X`), or Away Win (`2`) for every fixture in an active gameweek.
-- **Strict Lock Times:** Every gameweek locks automatically **1 hour before** its earliest scheduled kickoff. Predictions become immutable at lock.
-- **Favorite Club Bonus:** Choose your favorite Botola Pro club during onboarding. Matches involving your favorite team feature enhanced risk/reward scoring.
-- **Global & Private Competitions:** Compete on global weekly and season leaderboards, or create/join private mini-leagues with friends via invitation links.
-- **Multilingual & Full RTL Support:** Native support for Arabic (RTL), French, and English across web and mobile interfaces.
-- **News & Community Feed:** In-app updates, scoring explanations, editorial articles, and gameweek notifications.
-- **Role-Protected Administration:** Dedicated web portal for competition setup, fixture imports, result confirmation, score previews, idempotent settlement, and audit logging.
+- **Strict Lock Times:** Every gameweek locks automatically **1 hour before** its earliest scheduled kickoff. Predictions become immutable at lock time.
+- **Favorite Club Bonus:** Select your favorite Botola Pro club during onboarding to activate enhanced `+4/-2` risk/reward scoring on their matches.
+- **Global & Private Mini-Leagues:** Compete on global weekly and season leaderboards, or create and join private groups with friends using expiring invitation links or username/email invites.
+- **Transactional & In-App Notifications:** Automated reminders at 2 hours before lock, targeted incomplete-prediction alerts, lock notices, and settlement results with locale, timezone, and quiet-hour compliance.
+- **Ethical Sponsorship System:** Administrator-managed sponsor campaigns, feature-flagged and disabled by default. Clearly labeled, non-intrusive placements with zero PII tracking or prediction flow disruption.
+- **Multilingual & Full RTL Support:** Native support for Arabic (RTL), French, and English across web and mobile applications.
+- **Role-Protected Administration:** Separate admin web app for fixture management, result confirmation, score previews, idempotent settlement, news/announcement publishing, and audit history.
 
 ---
 
-## 🎯 Authoritative Scoring & Ranking Rules
+## 🎯 Authoritative Rules & Mechanics
 
 ### Scoring Matrix
 
@@ -33,6 +34,15 @@ Points are calculated using pure deterministic functions based on an immutable s
 
 - **Favorite Club Snapshot:** The multiplier is based on the favorite club recorded in the user's gameweek snapshot at lock time. Subsequent profile changes do not alter past settled scores.
 - **Idempotency:** Settlement re-runs with unchanged inputs produce identical point totals and audit records without duplication.
+
+### Notification Timing Rules
+
+- **Gameweek Open:** Sent when a published gameweek opens for predictions.
+- **2-Hour Pre-Lock Reminder:** Main deadline reminder sent exactly 2 hours before prediction lock (typically 3 hours before earliest kickoff).
+- **Targeted Incomplete Reminder:** Sent only to users with unsubmitted predictions prior to lock.
+- **Lock Notice:** Sent when the prediction window closes.
+- **Settlement & Ranking Notice:** Sent when match results are confirmed and rankings are calculated.
+- **Dynamic Rescheduling:** Scheduled notification jobs automatically recalculate if fixture kickoff times move before lock.
 
 ### Deterministic Leaderboard Tie-Breakers
 
@@ -73,6 +83,16 @@ BotolaHub/
 └── scripts/          # Workspace management scripts
 ```
 
+### Core Domain Data Models
+
+- **Identity & Profiles:** `User`, `UserIdentity`, `UserSession`, `UserProfile`, `UserFavoriteClubHistory`, `OAuthAccount`, `PhoneVerificationChallenge`
+- **Football & Competition:** `Competition`, `Season`, `Club`, `Gameweek`, `Fixture`
+- **Engine & Leaderboards:** `Prediction`, `PredictionScore`, `GameweekUserScore`, `SeasonUserScore`, `ScoringRuleSet`, `SettlementRun`, `RankingSnapshot`
+- **Social & Content:** `PrivateGroup`, `PrivateGroupMember`, `PrivateGroupInvitation`, `NewsArticle`, `NewsArticleTranslation`, `NewsCategory`
+- **Messaging & Notifications:** `Notification`, `NotificationPreference`, `DevicePushToken`, `NotificationEvent`, `NotificationDelivery`
+- **Sponsorship & Monetization:** `Sponsor`, `SponsorCampaign`, `SponsorCreative`, `SponsorPlacement`, `SponsorImpression`, `SponsorClick`
+- **Governance:** `AdminAuditLog`
+
 ### Technology Stack
 
 - **Core Monorepo:** pnpm, Turborepo, TypeScript (Strict Mode)
@@ -86,17 +106,18 @@ BotolaHub/
 
 ---
 
-## 📅 7-Day Implementation Plan
+## 📅 8-Day Implementation Plan
 
 | Day | Focus Area | Key Deliverables |
 | :--- | :--- | :--- |
-| **Day 1** | **Foundation & Monorepo Skeleton** | pnpm/Turborepo workspace, PostgreSQL/Redis Docker setup, health checks, localization shells (AR/FR/EN), and one-command launcher. |
-| **Day 2** | **Identity, Onboarding & Admin Foundation** | Email/Password (Argon2id), Phone OTP, OAuth adapters (Google, Facebook, Apple), onboarding flow, favorite club selection, and admin authorization. |
-| **Day 3** | **Gameweeks, Fixtures & Prediction Engine** | Admin fixture/gameweek management, 1-hour deadline lock logic, pure 1X2 prediction engine, and responsive prediction home screens. |
-| **Day 4** | **Settlement, Global Rankings & Corrections** | Audited result entry, idempotent settlement pipeline, score explanation snapshots, deterministic leaderboards, and result correction recalculations. |
-| **Day 5** | **Private Groups, Invitations & News** | Private mini-leagues (min 3 members), invite tokens (link/username/email), localized news authoring/feed, and in-app notifications. |
-| **Day 6** | **Admin Tools, Security & QA** | Bulk fixture import, analytics summaries, audit logging, rate limiting, security headers, accessibility check, and Playwright E2E test suite. |
-| **Day 7** | **Clean-Room Release Candidate** | Performance index tuning, production Docker packaging, Expo preview setup, disaster recovery docs, and `v0.1.0-rc.1` tagging. |
+| **Day 1** | **Foundation & Skeleton** | pnpm/Turborepo monorepo, PostgreSQL/Redis Docker setups, health checks, AR/FR/EN localization shells, and one-command launcher. |
+| **Day 2** | **Identity & Profile Onboarding** | Email/Password (Argon2id), Phone OTP, OAuth adapters (Google, Facebook, Apple), mandatory onboarding, favorite club selection, and admin security base. |
+| **Day 3** | **Gameweeks & Prediction Engine** | Admin fixture/gameweek management, 1-hour deadline lock logic, pure 1X2 prediction engine, and responsive prediction home screens. |
+| **Day 4** | **Settlement & Global Rankings** | Audited result entry, idempotent settlement pipeline, score explanation snapshots, deterministic global leaderboards, and result correction recalculations. |
+| **Day 5** | **Private Groups & News Feed** | Multi-group private mini-leagues (min 3 members), expiring invite tokens, group rankings, and localized admin-published news articles. |
+| **Day 6** | **Push Notifications & Sponsorship** | Device token management, 2-hour pre-lock reminders, incomplete prediction targeting, in-app notification inbox, and feature-flagged sponsor ad system. |
+| **Day 7** | **Admin Tools, Security & QA** | Bulk fixture import, analytics summaries, audit logging, rate limiting, security headers, accessibility audit, and Playwright E2E suite. |
+| **Day 8** | **Clean-Room Release Candidate** | Database index optimization, production Docker packaging, Expo preview setup, recovery documentation, full verification, and `v0.1.0-rc.1` tagging. |
 
 ---
 
@@ -171,11 +192,16 @@ corepack pnpm build
 
 ---
 
-## 🔒 Security & Privacy
+## 🔒 Security, Privacy & Sponsorship Rules
 
 - **Data Privacy:** User PII (birth dates, full names, phone numbers, email addresses) is never exposed in public leaderboards. Public profiles display only verified usernames, display names, and approved avatars.
-- **Audit Logging:** Every administrative action (lock overrides, result corrections, settlement triggers) requires identity verification, a request ID, and a mandatory audit reason log.
-- **Immutable Scopes:** Gameweek deadlines and scoring logic are strictly validated server-side within PostgreSQL database transactions. Client-submitted score metadata or deadlines are never trusted.
+- **Ethical Sponsorship Framework:**
+  - Sponsor ads remain **disabled by default** behind a global kill switch feature flag.
+  - Placements are strictly labeled as **"Sponsored"** and never disguise as fixtures, predictions, or ranking entries.
+  - Advertisements are completely excluded from prediction submission controls and flow.
+  - Zero PII, location data, or prediction choices are transmitted to sponsors.
+- **Audit Logging:** Every administrative action (lock overrides, result corrections, settlement triggers, sponsor campaign modifications) requires identity verification, a request ID, and a mandatory audit reason log.
+- **Server Authority:** Gameweek deadlines and scoring logic are strictly validated server-side within PostgreSQL database transactions. Client-submitted score metadata or deadlines are never trusted.
 
 ---
 
