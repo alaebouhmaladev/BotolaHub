@@ -1,0 +1,94 @@
+:root {
+  --bg-app: #0D0F12;
+  --card-charcoal: #161920;
+  --card-border: #232732;
+  --moroccan-green: #008751;
+  --warm-gold: #D4AF37;
+  --restrained-red: #C0392B;
+  --electric-accent: #00E5FF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #8A94A6;
+  --text-muted: #5C6479;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+body[dir="rtl"] {
+  font-family: Tajawal, Cairo, system-ui, sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background-color: var(--card-charcoal);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-lang {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  min-height: 44px;
+}
+
+.btn-lang.active {
+  background-color: var(--moroccan-green);
+  border-color: var(--moroccan-green);
+  color: #fff;
+  font-weight: 600;
+}
+
+.badge-gold {
+  background-color: rgba(212, 175, 55, 0.15);
+  color: var(--warm-gold);
+  border: 1px solid var(--warm-gold);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-green {
+  background-color: rgba(0, 135, 81, 0.2);
+  color: #00E687;
+  border: 1px solid var(--moroccan-green);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-red {
+  background-color: rgba(192, 57, 43, 0.2);
+  color: #FF6B5B;
+  border: 1px solid var(--restrained-red);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
