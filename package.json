@@ -1,0 +1,27 @@
+{
+  "name": "botolahub-monorepo",
+  "version": "0.1.0-dev",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "botolahub": "node scripts/launcher.mjs start",
+    "botolahub:status": "node scripts/launcher.mjs status",
+    "botolahub:stop": "node scripts/launcher.mjs stop",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml}\"",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.4.2",
+    "prisma": "^6.1.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

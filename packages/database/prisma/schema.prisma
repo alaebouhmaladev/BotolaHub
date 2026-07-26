@@ -1,0 +1,14 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model SystemHealthCheck {
+  id        String   @id @default(uuid())
+  status    String   @default("ok")
+  checkedAt DateTime @default(now())
+}
