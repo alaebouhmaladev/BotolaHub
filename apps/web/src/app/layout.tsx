@@ -1,15 +1,17 @@
 import './globals.css';
-import { Metadata } from 'next';
+import { AuthProvider } from '../context/AuthContext';
 
-export const metadata: Metadata = {
-  title: 'BotolaHub — Morocco 1X2 Prediction Game',
-  description: "Morocco's Botola Pro Inwi Weekly Match Prediction Game",
+export const metadata = {
+  title: 'BotolaHub — 1X2 Botola Pro Prediction Game',
+  description: "Morocco's official weekly Botola Pro Inwi 1X2 match prediction game.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-slate-950 text-slate-100 antialiased font-sans">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
