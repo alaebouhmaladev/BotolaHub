@@ -7,8 +7,202 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model SystemHealthCheck {
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum IdentityType {
+  EMAIL_PASSWORD
+  PHONE_OTP
+  OAUTH
+}
+
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
+  APPLE
+}
+
+enum ClientType {
+  WEB
+  MOBILE
+}
+
+model User {
+  id                 String                     @id @default(uuid())
+  email              String?                    @unique
+  role               UserRole                   @default(USER)
+  isProfileCompleted Boolean                    @default(false)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  identities         UserIdentity[]
+  oauthAccounts      OAuthAccount[]
+  sessions           UserSession[]
+  profile            UserProfile?
+  favoriteHistories  UserFavoriteClubHistory[]
+  adminAuditLogs     AdminAuditLog[]            @relation("AdminUserAudit")
+
+  @@index([email])
+}
+
+model UserIdentity {
+  id           String       @id @default(uuid())
+  userId       String
+  type         IdentityType
+  identifier   String       // email or normalized phone
+  passwordHash String?      // Argon2id hash for EMAIL_PASSWORD
+  isVerified   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, identifier])
+  @@index([userId])
+}
+
+model OAuthAccount {
+  id              String        @id @default(uuid())
+  userId          String
+  provider        OAuthProvider
+  providerSubject String
+  email           String?
+  rawProfile      String?       // JSON string
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userId])
+}
+
+model UserSession {
+  id                 String     @id @default(uuid())
+  userId             String
+  refreshTokenHash   String     @unique
+  isRevoked          Boolean    @default(false)
+  expiresAt          DateTime
+  replacedByTokenId  String?
+  clientType         ClientType @default(WEB)
+  userAgent          String?
+  ipAddress          String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+}
+
+model UserProfile {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  username       String    @unique // Case-insensitive uniqueness enforced via application & index
+  displayName    String
+  firstName      String
+  lastName       String
+  birthDate      DateTime
+  city           String
+  favoriteClubId String
+  avatarUrl      String?
+  phoneNumber    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteClub   Club      @relation(fields: [favoriteClubId], references: [id])
+
+  @@index([username])
+}
+
+model UserFavoriteClubHistory {
+  id                     String   @id @default(uuid())
+  userId                 String
+  clubId                 String
+  effectiveFromGameweek  Int?
+  changedAt              DateTime @default(now())
+
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club                   Club     @relation(fields: [clubId], references: [id])
+
+  @@index([userId])
+}
+
+model PhoneVerificationChallenge {
+  id          String   @id @default(uuid())
+  phoneNumber String   // Normalized E.164
+  otpCode     String
+  attempts    Int      @default(0)
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([phoneNumber])
+}
+
+model Competition {
   id        String   @id @default(uuid())
-  status    String   @default("ok")
-  checkedAt DateTime @default(now())
+  name      String
+  slug      String   @unique
+  code      String   @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  seasons   Season[]
+}
+
+model Season {
+  id            String      @id @default(uuid())
+  competitionId String
+  name          String
+  year          String
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId])
+}
+
+model Club {
+  id                String                    @id @default(uuid())
+  name              String
+  shortName         String
+  code              String                    @unique
+  primaryColor      String                    @default("#008751")
+  secondaryColor    String                    @default("#FFFFFF")
+  logoUrl           String?
+  isPlaceholder     Boolean                   @default(false)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  userProfiles      UserProfile[]
+  favoriteHistories UserFavoriteClubHistory[]
+}
+
+model AdminAuditLog {
+  id             String   @id @default(uuid())
+  adminUserId    String
+  action         String
+  targetResource String
+  targetId       String?
+  beforeValue    String?  // JSON string snapshot
+  afterValue     String?  // JSON string snapshot
+  auditReason    String?
+  requestId      String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  adminUser      User     @relation("AdminUserAudit", fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([action])
 }
