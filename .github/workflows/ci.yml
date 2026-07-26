@@ -1,0 +1,79 @@
+name: BotolaHub Monorepo CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  quality-gate:
+    name: Quality Gate (Lint, Typecheck, Test, Build)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: botolahub
+          POSTGRES_PASSWORD: botolahub_dev_secret
+          POSTGRES_DB: botolahub_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm with Corepack
+        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Frozen pnpm Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check Formatting
+        run: pnpm format:check
+
+      - name: Linting
+        run: pnpm lint
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @botolahub/database db:generate
+
+      - name: Run Prisma Migrations
+        run: pnpm --filter @botolahub/database db:deploy
+        env:
+          DATABASE_URL: postgresql://botolahub:botolahub_dev_secret@localhost:5432/botolahub_dev?schema=public
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test Suite
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://botolahub:botolahub_dev_secret@localhost:5432/botolahub_dev?schema=public
+          REDIS_URL: redis://localhost:6379
+
+      - name: Production Build
+        run: pnpm build
