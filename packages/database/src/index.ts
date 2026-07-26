@@ -1,5 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL =
+    'postgresql://botolahub:botolahub_dev_secret@localhost:5434/botolahub_dev?schema=public';
+}
+
 export * from '@prisma/client';
 
 export const prisma = new PrismaClient();

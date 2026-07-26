@@ -299,10 +299,16 @@ importers:
 
   packages/config:
     dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
       zod:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: ^20.17.6
+        version: 20.19.43
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -332,6 +338,9 @@ importers:
         specifier: ^0.41.1
         version: 0.41.1
     devDependencies:
+      '@types/node':
+        specifier: ^20.17.6
+        version: 20.19.43
       prisma:
         specifier: ^6.1.0
         version: 6.19.3(typescript@5.9.3)

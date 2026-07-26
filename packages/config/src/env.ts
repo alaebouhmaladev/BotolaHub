@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Try loading root .env file if DATABASE_URL is not set
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+  dotenv.config();
+}
 
 export const EnvironmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -11,11 +20,11 @@ export const EnvironmentSchema = z.object({
   POSTGRES_PASSWORD: z.string().default('botolahub_dev_secret'),
   POSTGRES_DB: z.string().default('botolahub_dev'),
   POSTGRES_HOST: z.string().default('localhost'),
-  POSTGRES_PORT: z.coerce.number().default(5432),
+  POSTGRES_PORT: z.coerce.number().default(5434),
   DATABASE_URL: z
     .string()
     .default(
-      'postgresql://botolahub:botolahub_dev_secret@localhost:5432/botolahub_dev?schema=public',
+      'postgresql://botolahub:botolahub_dev_secret@localhost:5434/botolahub_dev?schema=public',
     ),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
@@ -34,5 +43,6 @@ export function validateEnv(envInput: Record<string, unknown> = process.env): En
       `Invalid environment configuration: ${JSON.stringify(result.error.flatten().fieldErrors)}`,
     );
   }
+  process.env.DATABASE_URL = result.data.DATABASE_URL;
   return result.data;
 }
